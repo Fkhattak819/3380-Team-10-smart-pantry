@@ -38,7 +38,7 @@ class Header extends Component {
       <header className="bg-white py-8">
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-2">
-            <span className="text-4xl">👨‍🍳</span>
+            <span className="text-4xl">CHEF</span>
             <h1 className="text-4xl font-bold text-orange-500">SmartPantry</h1>
           </div>
           <p className="text-gray-600 text-lg">Your intelligent meal planning companion</p>

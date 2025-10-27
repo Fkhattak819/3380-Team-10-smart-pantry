@@ -52,20 +52,6 @@ class App extends Component {
         return <RecipeList />;
       case 'pantry':
         return <InventoryList />;
-      case 'shopping':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h2 className="text-xl font-semibold mb-4">Shopping List</h2>
-            <p className="text-gray-600">Shopping functionality coming soon!</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h2 className="text-xl font-semibold mb-4">Settings</h2>
-            <p className="text-gray-600">Settings functionality coming soon!</p>
-          </div>
-        );
       default:
         return <RecipeList />;
     }
@@ -84,7 +70,7 @@ class App extends Component {
         </div>
         {!this.state.isOnline && (
           <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-            ⚠️ You're offline
+            Warning: You're offline
           </div>
         )}
       </div>

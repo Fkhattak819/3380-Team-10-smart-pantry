@@ -140,13 +140,13 @@ class RecipeList extends Component {
   getFilterIcon(filter) {
     switch (filter) {
       case 'all':
-        return '📋';
+        return 'ALL';
       case 'ready':
-        return '✅';
+        return 'OK';
       case 'almostReady':
-        return '⏰';
+        return 'CLOCK';
       default:
-        return '📋';
+        return 'ALL';
     }
   }
 

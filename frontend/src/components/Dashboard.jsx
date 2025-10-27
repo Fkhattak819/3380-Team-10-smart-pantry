@@ -92,13 +92,13 @@ class Dashboard extends Component {
   getActivityIcon(type) {
     switch (type) {
       case 'add':
-        return '➕';
+        return '+';
       case 'remove':
-        return '🗑️';
+        return '-';
       case 'warning':
-        return '⚠️';
+        return '!';
       default:
-        return 'ℹ️';
+        return 'i';
     }
   }
 
@@ -137,25 +137,25 @@ class Dashboard extends Component {
                 'Total Items', 
                 this.state.statistics.total, 
                 'text-blue-600',
-                '📦'
+                'BOX'
               )}
               {this.getStatisticsCard(
                 'Fresh Items', 
                 this.state.statistics.fresh, 
                 'text-green-600',
-                '✅'
+                'OK'
               )}
               {this.getStatisticsCard(
                 'Expiring Soon', 
                 this.state.statistics.expiringSoon, 
                 'text-orange-600',
-                '⏰'
+                'CLOCK'
               )}
               {this.getStatisticsCard(
                 'Expired', 
                 this.state.statistics.expired, 
                 'text-red-600',
-                '❌'
+                'X'
               )}
             </div>
 
@@ -173,19 +173,19 @@ class Dashboard extends Component {
                     onClick={() => this.handleQuickAction('add')}
                     className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
                   >
-                    ➕ Add Item
+                    + Add Item
                   </button>
                   <button 
                     onClick={() => this.handleQuickAction('shopping')}
                     className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
                   >
-                    🛒 Generate Shopping List
+                    Generate Shopping List
                   </button>
                   <button 
                     onClick={() => this.handleQuickAction('expiring')}
                     className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
                   >
-                    ⏰ View Expiring Items
+                    View Expiring Items
                   </button>
                 </div>
               </div>
@@ -216,7 +216,7 @@ class Dashboard extends Component {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Database:</span>
-                    <span className="text-green-600">✓ Connected</span>
+                    <span className="text-green-600">Connected</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Last Sync:</span>

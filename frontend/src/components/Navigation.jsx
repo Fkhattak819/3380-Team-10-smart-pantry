@@ -38,24 +38,18 @@ class Navigation extends Component {
   getTabIcon(tab) {
     switch (tab) {
       case 'recipes':
-        return '👨‍🍳';
+        return 'R';
       case 'pantry':
-        return '🏠';
-      case 'shopping':
-        return '🛒';
-      case 'settings':
-        return '⚙️';
+        return 'P';
       default:
-        return '📋';
+        return '?';
     }
   }
 
   render() {
     const tabs = [
       { id: 'recipes', label: 'Recipes' },
-      { id: 'pantry', label: 'Pantry' },
-      { id: 'shopping', label: 'Shopping' },
-      { id: 'settings', label: 'Settings' }
+      { id: 'pantry', label: 'Pantry' }
     ];
 
     return (

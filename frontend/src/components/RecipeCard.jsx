@@ -66,7 +66,7 @@ class RecipeCard extends Component {
         {/* Recipe Image Placeholder */}
         <div className="relative h-48 bg-gradient-to-br from-orange-100 to-orange-200">
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-6xl opacity-50">🍽️</span>
+            <span className="text-6xl opacity-50">FOOD</span>
           </div>
           <div className="absolute top-2 right-2">
             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${this.getMatchColorClass(matchPercentage)}`}>
@@ -84,15 +84,15 @@ class RecipeCard extends Component {
           {/* Recipe Details */}
           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
             <div className="flex items-center space-x-1">
-              <span>⏱️</span>
+              <span>TIME</span>
               <span>{recipe.getTimeFormatted()}</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span>🔥</span>
+              <span>CAL</span>
               <span>{recipe.caloriesPerServing} cal</span>
             </div>
             <div className="flex items-center space-x-1">
-              <span>👥</span>
+              <span>PEOPLE</span>
               <span>{recipe.servings}</span>
             </div>
           </div>
@@ -127,7 +127,7 @@ class RecipeCard extends Component {
               View Recipe
             </button>
             <button className="text-gray-600 hover:text-gray-800 transition-colors">
-              <span className="text-lg">🛒</span>
+              <span className="text-lg">CART</span>
             </button>
           </div>
         </div>
