@@ -1,26 +1,42 @@
 # Smart Pantry
 
-A smart pantry management system for Team 10.
+A smart pantry management system created by Team 10.
 
 ## Overview
 
-This project aims to create an intelligent pantry management solution that helps users track inventory, manage expiration dates, and optimize food storage.
+The Smart Pantry is a food inventory and meal suggestion site that aims to help its users monitor and use their ingredients effectively. It allows users to track their ingredients, optimize food storage, and overall dscover recipes that can be made with what they already have. 
+
+The goal of this project is to reduce food waste, encourage healthier eating, and make meal planning easier through a understandable interface.
 
 ## Features
 
 - Inventory tracking
-- Expiration date monitoring
-- Smart notifications
+    - add, edit, and remove ingredients from your digital pantry
+- Possible expiration monitoring
+    - a one click area to see what may need to be replaced soon
+- Recipe matching
+    - automatically generate recipe suggestions based on available ingredients
+- Showcasing healthy meal alternatives
+    - discover healthier options based on ingredients or selected recipes
+- Present missing items
+    - quickly see what is missing for a particular recipe
 - User-friendly interface
+    - simple design for an amazing user experience
 
 ## Getting Started
 
-More detailed setup instructions will be added as the project develops.
+Input ingredients
+Smart Matching
+Get Recipes
+Select a Meal
+Enjoy!
 
-## Team
+## Class Team
 
-Team 10 - CSC 3380
+Team 10 - CSC 3380: Object Oriented Design
+Andrew Underwood, Hammaad Alam, Tyler Gates, Fahd Khattak, Madison Nguyen
 
 ## License
 
 This project is part of a CSC 3380 course assignment for LSU.
+Currently for educational use, not distrubution.
