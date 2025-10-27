@@ -19,8 +19,8 @@ More detailed setup instructions will be added as the project develops.
 
 ## Team
 
-Team 10 - CS 3380
+Team 10 - CSC 3380
 
 ## License
 
-This project is part of a CS 3380 course assignment.
+This project is part of a CSC 3380 course assignment for LSU.
