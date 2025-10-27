@@ -26,17 +26,17 @@ The goal of this project is to reduce food waste, encourage healthier eating, an
 ## Getting Started
 
 Input ingredients
-Smart Matching
-Get Recipes
-Select a Meal
-Enjoy!
+\nSmart Matching
+\nGet Recipes
+\nSelect a Meal
+\nEnjoy!
 
 ## Class Team
 
 Team 10 - CSC 3380: Object Oriented Design
-Andrew Underwood, Hammaad Alam, Tyler Gates, Fahd Khattak, Madison Nguyen
+\nAndrew Underwood, Hammaad Alam, Tyler Gates, Fahd Khattak, Madison Nguyen
 
 ## License
 
 This project is part of a CSC 3380 course assignment for LSU.
-Currently for educational use, not distrubution.
+\nCurrently for educational use, not distrubution.
