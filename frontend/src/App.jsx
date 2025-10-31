@@ -4,38 +4,24 @@ import Navigation from './components/Navigation'
 import RecipeList from './components/RecipeList'
 import InventoryList from './components/InventoryList'
 
-/**
- * Main App component class - root component of the SmartPantry application
- * Follows object-oriented design principles with proper component lifecycle
- */
+// Main App component
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       activeTab: 'recipes',
-      appVersion: '1.0.0',
-      isOnline: navigator.onLine,
-      lastUpdated: new Date()
+      isOnline: navigator.onLine
     };
   }
 
   componentDidMount() {
-    // Listen for online/offline status
     window.addEventListener('online', this.handleOnlineStatus);
     window.addEventListener('offline', this.handleOnlineStatus);
-    
-    // Update last updated time every minute
-    this.updateTimer = setInterval(() => {
-      this.setState({ lastUpdated: new Date() });
-    }, 60000);
   }
 
   componentWillUnmount() {
     window.removeEventListener('online', this.handleOnlineStatus);
     window.removeEventListener('offline', this.handleOnlineStatus);
-    if (this.updateTimer) {
-      clearInterval(this.updateTimer);
-    }
   }
 
   handleOnlineStatus = () => {

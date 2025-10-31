@@ -1,9 +1,6 @@
 import React, { Component } from 'react';
 
-/**
- * Navigation component class - handles main navigation
- * Follows object-oriented design principles
- */
+// Navigation component
 class Navigation extends Component {
   constructor(props) {
     super(props);
@@ -35,17 +32,6 @@ class Navigation extends Component {
     return `${baseClass} text-gray-600 hover:text-gray-800 hover:bg-gray-100`;
   }
 
-  getTabIcon(tab) {
-    switch (tab) {
-      case 'recipes':
-        return 'R';
-      case 'pantry':
-        return 'P';
-      default:
-        return '?';
-    }
-  }
-
   render() {
     const tabs = [
       { id: 'recipes', label: 'Recipes' },
@@ -60,7 +46,6 @@ class Navigation extends Component {
             onClick={() => this.handleTabChange(tab.id)}
             className={this.getTabClass(tab.id)}
           >
-            <span className="text-lg">{this.getTabIcon(tab.id)}</span>
             <span className="font-medium">{tab.label}</span>
           </button>
         ))}

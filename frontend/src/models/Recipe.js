@@ -69,18 +69,63 @@ export class Recipe {
     return this._ingredients.map(ingredient => ingredient.name);
   }
 
+  normalizeIngredientName(name) {
+    if (!name) return '';
+    
+    let normalized = name.toLowerCase().trim();
+    
+    // Replace underscores with spaces
+    normalized = normalized.replace(/_/g, ' ');
+    
+    // Handle common plural/singular forms
+    // Remove trailing 'es' but keep 'ss' words
+    if (normalized.endsWith('es') && !normalized.endsWith('ss')) {
+      normalized = normalized.slice(0, -2);
+    } else if (normalized.endsWith('s') && !normalized.endsWith('ss')) {
+      normalized = normalized.slice(0, -1);
+    }
+    
+    // Normalize whitespace
+    normalized = normalized.replace(/\s+/g, ' ').trim();
+    
+    return normalized;
+  }
+
+  isIngredientMatch(ingredientName, availableNames) {
+    const normalizedIngredient = this.normalizeIngredientName(ingredientName);
+    const normalizedAvailable = availableNames.map(name => this.normalizeIngredientName(name));
+    
+    // Check exact match
+    if (normalizedAvailable.includes(normalizedIngredient)) {
+      return true;
+    }
+    
+    // Check if ingredient name contains or is contained by any available name
+    for (let available of normalizedAvailable) {
+      if (normalizedIngredient === available || 
+          normalizedIngredient.includes(available) || 
+          available.includes(normalizedIngredient)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
   getMissingIngredients(availableIngredients) {
-    const availableNames = availableIngredients.map(ing => ing.toLowerCase());
-    return this._ingredients.filter(ingredient => 
-      !availableNames.includes(ingredient.name.toLowerCase())
-    );
+    const availableNames = availableIngredients.map(ing => typeof ing === 'string' ? ing : ing.name || ing);
+    return this._ingredients.filter(ingredient => {
+      const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.name;
+      return !this.isIngredientMatch(ingredientName, availableNames);
+    });
   }
 
   getMatchPercentage(availableIngredients) {
-    const availableNames = availableIngredients.map(ing => ing.toLowerCase());
-    const matchingIngredients = this._ingredients.filter(ingredient => 
-      availableNames.includes(ingredient.name.toLowerCase())
-    );
+    const availableNames = availableIngredients.map(ing => typeof ing === 'string' ? ing : ing.name || ing);
+    const matchingIngredients = this._ingredients.filter(ingredient => {
+      const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.name;
+      return this.isIngredientMatch(ingredientName, availableNames);
+    });
     return Math.round((matchingIngredients.length / this._ingredients.length) * 100);
   }
 

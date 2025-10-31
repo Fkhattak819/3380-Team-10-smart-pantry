@@ -115,7 +115,7 @@ export class RecipeService {
       missingIngredients,
       status,
       availableIngredients: recipe.ingredients.filter(ingredient => 
-        this._availableIngredients.includes(ingredient.name.toLowerCase())
+        recipe.isIngredientMatch(ingredient.name, this._availableIngredients)
       )
     };
   }

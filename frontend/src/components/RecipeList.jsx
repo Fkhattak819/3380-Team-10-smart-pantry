@@ -2,10 +2,7 @@ import React, { Component } from 'react';
 import RecipeCard from './RecipeCard';
 import { RecipeService } from '../services/RecipeService.js';
 
-/**
- * RecipeList component class - manages recipe display and filtering
- * Follows object-oriented design principles with proper state management
- */
+// Recipe list component
 class RecipeList extends Component {
   constructor(props) {
     super(props);
@@ -32,7 +29,6 @@ class RecipeList extends Component {
 
   async loadRecipes() {
     try {
-      // Load recipes from the public JSON file
       const response = await fetch('/recipes.json');
       const recipesData = await response.json();
       
@@ -46,14 +42,12 @@ class RecipeList extends Component {
 
   async setupAvailableIngredients() {
     try {
-      // Load pantry data to get available ingredients
       const response = await fetch('/pantry.json');
       const pantryData = await response.json();
       const ingredientNames = pantryData.map(item => item.name.toLowerCase());
       this.recipeService.setAvailableIngredients(ingredientNames);
     } catch (error) {
       console.error('Error loading pantry data for ingredients:', error);
-      // Fallback to mock ingredients
       const mockIngredients = [
         'egg', 'cheese', 'butter', 'salt', 'black_pepper', 'garlic', 'onion', 
         'carrot', 'olive_oil', 'soy_sauce', 'chicken_breast', 'bell_pepper',
@@ -137,19 +131,6 @@ class RecipeList extends Component {
     return `${baseClass} text-gray-600 hover:text-gray-800 hover:bg-gray-100`;
   }
 
-  getFilterIcon(filter) {
-    switch (filter) {
-      case 'all':
-        return 'ALL';
-      case 'ready':
-        return 'OK';
-      case 'almostReady':
-        return 'CLOCK';
-      default:
-        return 'ALL';
-    }
-  }
-
   render() {
     const { filteredRecipes, isLoading, searchQuery, filterCounts } = this.state;
 
@@ -169,32 +150,27 @@ class RecipeList extends Component {
         <h2 className="text-xl font-semibold mb-4">Recipe Suggestions</h2>
         <p className="text-gray-600 mb-6">Based on your pantry and preferences</p>
         
-        {/* Filter Tabs */}
         <div className="flex space-x-2 mb-6">
           <button
             onClick={() => this.handleFilterChange('all')}
             className={this.getFilterClass('all')}
           >
-            <span>{this.getFilterIcon('all')}</span>
             <span>All Recipes ({filterCounts.all})</span>
           </button>
           <button
             onClick={() => this.handleFilterChange('ready')}
             className={this.getFilterClass('ready')}
           >
-            <span>{this.getFilterIcon('ready')}</span>
             <span>Ready to Cook ({filterCounts.ready})</span>
           </button>
           <button
             onClick={() => this.handleFilterChange('almostReady')}
             className={this.getFilterClass('almostReady')}
           >
-            <span>{this.getFilterIcon('almostReady')}</span>
             <span>Almost Ready ({filterCounts.almostReady})</span>
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="mb-6">
           <input
             type="text"
@@ -205,7 +181,6 @@ class RecipeList extends Component {
           />
         </div>
 
-        {/* Recipe Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredRecipes.length === 0 ? (
             <div className="col-span-2 text-center py-8">

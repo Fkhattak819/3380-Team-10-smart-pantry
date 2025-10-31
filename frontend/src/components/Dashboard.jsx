@@ -2,10 +2,7 @@ import React, { Component } from 'react';
 import InventoryList from './InventoryList';
 import { PantryService } from '../services/PantryService.js';
 
-/**
- * Dashboard component class - main dashboard with statistics and controls
- * Follows object-oriented design principles with proper state management
- */
+// Dashboard component
 class Dashboard extends Component {
   constructor(props) {
     super(props);
@@ -35,7 +32,6 @@ class Dashboard extends Component {
   }
 
   initializeRecentActivity() {
-    // Initialize with sample recent activity
     const activities = [
       { id: 1, action: 'Added Milk to inventory', timestamp: new Date(), type: 'add' },
       { id: 2, action: 'Bread expires tomorrow', timestamp: new Date(), type: 'warning' },
@@ -131,7 +127,6 @@ class Dashboard extends Component {
       <div className="min-h-screen bg-gray-100">
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Stats Cards */}
             <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               {this.getStatisticsCard(
                 'Total Items', 
@@ -159,12 +154,10 @@ class Dashboard extends Component {
               )}
             </div>
 
-            {/* Main Content */}
             <div className="lg:col-span-2">
               <InventoryList />
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-lg shadow-md">
                 <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>

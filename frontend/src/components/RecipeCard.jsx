@@ -1,9 +1,6 @@
 import React, { Component } from 'react';
 
-/**
- * RecipeCard component class - displays individual recipe cards
- * Follows object-oriented design principles
- */
+// Recipe card component
 class RecipeCard extends Component {
   constructor(props) {
     super(props);
@@ -63,7 +60,6 @@ class RecipeCard extends Component {
         onMouseEnter={this.handleMouseEnter}
         onMouseLeave={this.handleMouseLeave}
       >
-        {/* Recipe Image Placeholder */}
         <div className="relative h-48 bg-gradient-to-br from-orange-100 to-orange-200">
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-6xl opacity-50">FOOD</span>
@@ -75,13 +71,11 @@ class RecipeCard extends Component {
           </div>
         </div>
 
-        {/* Recipe Content */}
         <div className="p-4">
           <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
             {recipe.title}
           </h3>
 
-          {/* Recipe Details */}
           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
             <div className="flex items-center space-x-1">
               <span>TIME</span>
@@ -97,7 +91,6 @@ class RecipeCard extends Component {
             </div>
           </div>
 
-          {/* Ingredients Progress */}
           <div className="mb-3">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
               <span>Ingredients Available</span>
@@ -111,7 +104,6 @@ class RecipeCard extends Component {
             </div>
           </div>
 
-          {/* Missing Ingredients */}
           {missingIngredients.length > 0 && (
             <div className="mb-3">
               <p className="text-sm text-orange-600 font-medium mb-1">Missing:</p>
@@ -121,7 +113,6 @@ class RecipeCard extends Component {
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex items-center justify-between">
             <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors text-sm font-medium">
               View Recipe
