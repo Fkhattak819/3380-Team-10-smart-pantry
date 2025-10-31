@@ -105,7 +105,7 @@ class InventoryList extends Component {
       case 'expired':
         return 'border-red-300 bg-red-50';
       case 'expiring-soon':
-        return 'border-orange-300 bg-orange-50';
+        return 'border-green-300 bg-green-50';
       case 'fresh':
         return 'border-green-300 bg-green-50';
       default:
@@ -127,8 +127,27 @@ class InventoryList extends Component {
     }
   }
 
+  getFilterCounts() {
+    const all = this.state.items.length;
+    const expired = this.state.items.filter(item => item.getStatus() === 'expired').length;
+    const expiringSoon = this.state.items.filter(item => item.getStatus() === 'expiring-soon').length;
+    const fresh = this.state.items.filter(item => item.getStatus() === 'fresh').length;
+    return { all, expired, expiringSoon, fresh };
+  }
+
+  getFilterClass(status) {
+    const baseClass = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors";
+    const isActive = this.state.filterStatus === status;
+    
+    if (isActive) {
+      return `${baseClass} bg-gray-800 text-white`;
+    }
+    return `${baseClass} text-gray-600 hover:text-gray-800 hover:bg-gray-100`;
+  }  
+
   render() {
     const filteredItems = this.getFilteredItems();
+    const filterCounts = this.getFilterCounts();
 
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -140,10 +159,25 @@ class InventoryList extends Component {
             placeholder="Search items..."
             value={this.state.searchQuery}
             onChange={this.handleSearchChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"          
           />
         </div>
         
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => this.handleFilterChange('all')}
+            className={this.getFilterClass('all')}
+          >
+            <span>All ({filterCounts.all})</span>
+          </button>
+          <button
+            onClick={() => this.handleFilterChange('expiring-soon')}
+            className={this.getFilterClass('expiring-soon')}
+          >
+            <span>Expiring Soon ({filterCounts.expiringSoon})</span>
+          </button>
+        </div>
+
         <form onSubmit={this.handleAddItem} className="mb-6">
           <h3 className="text-lg font-medium mb-3">Add New Item</h3>
           <div className="flex gap-3 items-end">
@@ -167,12 +201,12 @@ class InventoryList extends Component {
               placeholder="Quantity"
               value={this.state.newItem.quantity}
               onChange={(e) => this.handleInputChange('quantity', parseInt(e.target.value) || 1)}
-              className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               min="1"
             />
             <button
               type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               Add Item
             </button>
@@ -186,10 +220,15 @@ class InventoryList extends Component {
             filteredItems.map(item => (
               <div 
                 key={item.id} 
-                className="flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white"
+                className={`flex items-center justify-between p-4 border border-gray-300 rounded-lg ${this.getItemStatusClass(item)}`} 
               >
                 <div>
-                  <h4 className="font-medium text-gray-800 mb-1">{item.name}</h4>
+                  <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-gray-800">{item.name}</h4>
+                      <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700">
+                        {this.getItemStatusText(item)}
+                      </span>
+                  </div>               
                   <p className="text-sm text-gray-600">
                     Expires: {item.expiryDate.toLocaleDateString()} | 
                     Quantity: {item.quantity}

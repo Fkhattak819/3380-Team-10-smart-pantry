@@ -28,7 +28,7 @@ class RecipeCard extends Component {
       case 'ready':
         return 'border-green-300 bg-green-50';
       case 'almost-ready':
-        return 'border-orange-300 bg-orange-50';
+        return 'border-green-300 bg-green-50';
       case 'needs-ingredients':
         return 'border-red-300 bg-red-50';
       default:
@@ -60,7 +60,7 @@ class RecipeCard extends Component {
         onMouseEnter={this.handleMouseEnter}
         onMouseLeave={this.handleMouseLeave}
       >
-        <div className="relative h-48 bg-gradient-to-br from-orange-100 to-orange-200">
+        <div className="relative h-48 bg-white">
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-6xl opacity-50">FOOD</span>
           </div>
@@ -106,15 +106,15 @@ class RecipeCard extends Component {
 
           {missingIngredients.length > 0 && (
             <div className="mb-3">
-              <p className="text-sm text-orange-600 font-medium mb-1">Missing:</p>
-              <p className="text-xs text-orange-600">
+              <p className="text-sm text-green-600 font-medium mb-1">Missing:</p>
+              <p className="text-xs text-green-600">
                 {missingIngredients.map(ing => ing.name).join(', ')}
               </p>
             </div>
           )}
 
           <div className="flex items-center justify-between">
-            <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors text-sm font-medium">
+            <button className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm font-medium">
               View Recipe
             </button>
             <button className="text-gray-600 hover:text-gray-800 transition-colors">
