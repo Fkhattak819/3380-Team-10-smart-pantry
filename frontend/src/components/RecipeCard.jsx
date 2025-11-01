@@ -54,7 +54,7 @@ class RecipeCard extends Component {
     const { isMissingExpanded } = this.state;
     const { missingIngredients } = this.props.matchInfo;
     
-    const missingNames = missingIngredients.map(ing => ing.name);
+    const missingNames = missingIngredients.map(ing => ing.name.replace(/_/g, ' '));
     const MAX_DISPLAY_MISSING = 2;
 
     if (missingNames.length === 0) {

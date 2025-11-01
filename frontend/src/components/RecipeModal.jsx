@@ -38,7 +38,7 @@ class RecipeModal extends Component {
             <ul className="list-disc list-inside space-y-1 text-gray-600 mb-4">
               {recipe.ingredients.map((ing, index) => (
                 <li key={index}>
-                  {ing.qty} {ing.unit} {ing.name}
+                  {ing.qty} {ing.unit} {ing.name.replace(/_/g, ' ')}
                 </li>
               ))}
             </ul>
