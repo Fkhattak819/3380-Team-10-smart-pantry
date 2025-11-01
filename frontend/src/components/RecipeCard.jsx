@@ -5,7 +5,8 @@ class RecipeCard extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isHovered: false
+      isHovered: false,
+      isMissingExpanded: false,
     };
   }
 
@@ -15,6 +16,13 @@ class RecipeCard extends Component {
 
   handleMouseLeave = () => {
     this.setState({ isHovered: false });
+  };
+
+  toggleMissing = (e) => {
+    e.stopPropagation();
+    this.setState(prevState => ({ 
+      isMissingExpanded: !prevState.isMissingExpanded 
+    }));
   };
 
   getMatchColorClass(matchPercentage) {
@@ -42,8 +50,46 @@ class RecipeCard extends Component {
     return 'bg-red-500';
   }
 
+  renderMissingIngredients() {
+    const { isMissingExpanded } = this.state;
+    const { missingIngredients } = this.props.matchInfo;
+    
+    const missingNames = missingIngredients.map(ing => ing.name);
+    const MAX_DISPLAY_MISSING = 2;
+
+    if (missingNames.length === 0) {
+      return null;
+    }
+
+    if (missingNames.length <= MAX_DISPLAY_MISSING || isMissingExpanded) {
+      let content = missingNames.join(', ');
+      
+      if (missingNames.length > MAX_DISPLAY_MISSING) {
+        content = (
+          <>
+            {content}
+            <button onClick={this.toggleMissing} className="ml-1 text-blue-500 hover:underline text-xs focus:outline-none">
+              (show less)
+            </button>
+          </>
+        );
+      }
+      return content;
+    }
+
+    const truncatedList = missingNames.slice(0, MAX_DISPLAY_MISSING).join(', ');
+    return (
+      <>
+        {truncatedList}
+        <button onClick={this.toggleMissing} className="ml-1 text-blue-500 hover:underline text-xs focus:outline-none">
+          (...)
+        </button>
+      </>
+    );
+  }
+
   render() {
-    const { recipe, matchInfo } = this.props;
+    const { recipe, matchInfo, onViewRecipe } = this.props;
     const { isHovered } = this.state;
 
     if (!recipe || !matchInfo) {
@@ -103,18 +149,21 @@ class RecipeCard extends Component {
               ></div>
             </div>
           </div>
-
+          
           {missingIngredients.length > 0 && (
             <div className="mb-3">
               <p className="text-sm text-green-600 font-medium mb-1">Missing:</p>
               <p className="text-xs text-green-600">
-                {missingIngredients.map(ing => ing.name).join(', ')}
+                {this.renderMissingIngredients()}
               </p>
             </div>
           )}
 
           <div className="flex items-center justify-between">
-            <button className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm font-medium">
+            <button 
+              onClick={() => onViewRecipe(recipe)}
+              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm font-medium"
+            >
               View Recipe
             </button>
             <button className="text-gray-600 hover:text-gray-800 transition-colors">

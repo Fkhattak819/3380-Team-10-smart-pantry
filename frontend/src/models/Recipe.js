@@ -95,21 +95,7 @@ export class Recipe {
     const normalizedIngredient = this.normalizeIngredientName(ingredientName);
     const normalizedAvailable = availableNames.map(name => this.normalizeIngredientName(name));
     
-    // Check exact match
-    if (normalizedAvailable.includes(normalizedIngredient)) {
-      return true;
-    }
-    
-    // Check if ingredient name contains or is contained by any available name
-    for (let available of normalizedAvailable) {
-      if (normalizedIngredient === available || 
-          normalizedIngredient.includes(available) || 
-          available.includes(normalizedIngredient)) {
-        return true;
-      }
-    }
-    
-    return false;
+    return normalizedAvailable.includes(normalizedIngredient);
   }
 
   getMissingIngredients(availableIngredients) {

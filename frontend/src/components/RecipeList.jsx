@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import RecipeCard from './RecipeCard';
 import { RecipeService } from '../services/RecipeService.js';
+import RecipeModal from './RecipeModal'; // Import the modal
 
 // Recipe list component
 class RecipeList extends Component {
@@ -18,7 +19,8 @@ class RecipeList extends Component {
         all: 0,
         ready: 0,
         almostReady: 0
-      }
+      }, // <-- FIX 1: Added the missing comma here
+      selectedRecipe: null,
     };
   }
 
@@ -121,6 +123,14 @@ class RecipeList extends Component {
     return this.recipeService.searchRecipes(query);
   }
 
+  handleViewRecipe = (recipe) => {
+    this.setState({ selectedRecipe: recipe });
+  };
+  
+  handleCloseModal = () => {
+    this.setState({ selectedRecipe: null });
+  };
+
   getFilterClass(filter) {
     const baseClass = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors";
     const isActive = this.state.activeFilter === filter;
@@ -132,7 +142,7 @@ class RecipeList extends Component {
   }
 
   render() {
-    const { filteredRecipes, isLoading, searchQuery, filterCounts } = this.state;
+    const { filteredRecipes, isLoading, searchQuery, filterCounts, selectedRecipe } = this.state;
 
     if (isLoading) {
       return (
@@ -146,60 +156,69 @@ class RecipeList extends Component {
     }
 
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Recipe Suggestions</h2>
-        <p className="text-gray-600 mb-6">Based on your pantry and preferences</p>
+      <>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Recipe Suggestions</h2>
+          <p className="text-gray-600 mb-6">Based on your pantry and preferences</p>
+          
+          <div className="flex space-x-2 mb-6">
+            <button
+              onClick={() => this.handleFilterChange('all')}
+              className={this.getFilterClass('all')}
+            >
+              <span>All Recipes ({filterCounts.all})</span>
+            </button>
+            <button
+              onClick={() => this.handleFilterChange('ready')}
+              className={this.getFilterClass('ready')}
+            >
+              <span>Ready to Cook ({filterCounts.ready})</span>
+            </button>
+            <button
+              onClick={() => this.handleFilterChange('almostReady')}
+              className={this.getFilterClass('almostReady')}
+            >
+              <span>Almost Ready ({filterCounts.almostReady})</span>
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search recipes..."
+              value={searchQuery}
+              onChange={this.handleSearchChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredRecipes.length === 0 ? (
+              <div className="col-span-2 text-center py-8">
+                <p className="text-gray-500">No recipes found</p>
+              </div>
+            ) : (
+              filteredRecipes.map(recipe => {
+                const matchInfo = this.recipeService.getRecipeWithMatchInfo(recipe);
+                return (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    matchInfo={matchInfo}
+                    onViewRecipe={this.handleViewRecipe}
+                  />
+                );
+              })
+            )}
+          </div>
+        </div>
+
+                <RecipeModal 
+          recipe={selectedRecipe}
+          onClose={this.handleCloseModal}
+        />
         
-        <div className="flex space-x-2 mb-6">
-          <button
-            onClick={() => this.handleFilterChange('all')}
-            className={this.getFilterClass('all')}
-          >
-            <span>All Recipes ({filterCounts.all})</span>
-          </button>
-          <button
-            onClick={() => this.handleFilterChange('ready')}
-            className={this.getFilterClass('ready')}
-          >
-            <span>Ready to Cook ({filterCounts.ready})</span>
-          </button>
-          <button
-            onClick={() => this.handleFilterChange('almostReady')}
-            className={this.getFilterClass('almostReady')}
-          >
-            <span>Almost Ready ({filterCounts.almostReady})</span>
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search recipes..."
-            value={searchQuery}
-            onChange={this.handleSearchChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredRecipes.length === 0 ? (
-            <div className="col-span-2 text-center py-8">
-              <p className="text-gray-500">No recipes found</p>
-            </div>
-          ) : (
-            filteredRecipes.map(recipe => {
-              const matchInfo = this.recipeService.getRecipeWithMatchInfo(recipe);
-              return (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  matchInfo={matchInfo}
-                />
-              );
-            })
-          )}
-        </div>
-      </div>
+      </> 
     );
   }
 }
