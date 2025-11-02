@@ -1,0 +1,300 @@
+[
+  {
+    "id": "cheese_omelette",
+    "title": "Cheese Omelette",
+    "time_minutes": 10,
+    "diet_tags": ["breakfast", "quick", "easy", "vegetarian"],
+    "servings": 1,
+    "calories_per_serving": 360,
+    "ingredients": [
+      {"name": "egg", "qty": 3, "unit": "count"},
+      {"name": "cheese", "qty": 50, "unit": "g"},
+      {"name": "butter", "qty": 1, "unit": "tbsp"},
+      {"name": "salt", "qty": 0.25, "unit": "tsp"},
+      {"name": "black_pepper", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Beat egg with salt and black_pepper until smooth.",
+      "Melt butter in a nonstick pan over medium-low heat.",
+      "Pour in egg; gently pull set edges toward center to let uncooked egg flow.",
+      "When top is slightly runny, add cheese over one half.",
+      "Fold and cook 20-30 seconds to melt. Slide onto a plate."
+    ]
+  },
+  {
+    "id": "veggie_fried_rice",
+    "title": "Veggie Fried Rice",
+    "time_minutes": 15,
+    "diet_tags": ["quick", "easy", "vegetarian"],
+    "servings": 2,
+    "calories_per_serving": 430,
+    "ingredients": [
+      {"name": "cooked_rice", "qty": 300, "unit": "g"},
+      {"name": "egg", "qty": 2, "unit": "count"},
+      {"name": "garlic", "qty": 2, "unit": "clove"},
+      {"name": "onion", "qty": 0.5, "unit": "count"},
+      {"name": "carrot", "qty": 1, "unit": "count"},
+      {"name": "peas", "qty": 100, "unit": "g"},
+      {"name": "soy_sauce", "qty": 1, "unit": "tbsp"},
+      {"name": "olive_oil", "qty": 1, "unit": "tbsp"}
+    ],
+    "instructions": [
+      "Mince garlic; finely dice onion and carrot. Beat egg.",
+      "Heat half the olive_oil in a pan over medium-high; scramble egg just set, remove.",
+      "Add remaining olive_oil; saute onion, carrot, and garlic 2-3 minutes.",
+      "Add cooked_rice and peas; stir-fry 2-3 minutes.",
+      "Return egg; add soy_sauce and toss. Serve hot."
+    ]
+  },
+  {
+    "id": "chicken_stir_fry",
+    "title": "Simple Chicken Stir-Fry",
+    "time_minutes": 20,
+    "diet_tags": ["quick", "easy", "high_protein"],
+    "servings": 2,
+    "calories_per_serving": 480,
+    "ingredients": [
+      {"name": "chicken_breast", "qty": 300, "unit": "g"},
+      {"name": "bell_pepper", "qty": 1, "unit": "count"},
+      {"name": "broccoli", "qty": 150, "unit": "g"},
+      {"name": "garlic", "qty": 2, "unit": "clove"},
+      {"name": "soy_sauce", "qty": 2, "unit": "tbsp"},
+      {"name": "olive_oil", "qty": 1, "unit": "tbsp"},
+      {"name": "cornstarch", "qty": 1, "unit": "tsp"},
+      {"name": "water", "qty": 60, "unit": "ml"},
+      {"name": "black_pepper", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Slice chicken, bell_pepper, and broccoli; mince garlic.",
+      "Mix soy_sauce, water, cornstarch, and black_pepper in a small bowl.",
+      "Heat olive_oil over medium-high; saute chicken 4-5 minutes until cooked.",
+      "Add vegetables and garlic; cook 2-3 minutes.",
+      "Pour in sauce; toss 1-2 minutes until glossy. Serve immediately."
+    ]
+  },
+  {
+    "id": "tuna_salad_sandwich",
+    "title": "Tuna Salad Sandwich",
+    "time_minutes": 8,
+    "diet_tags": ["quick", "easy"],
+    "servings": 2,
+    "calories_per_serving": 420,
+    "ingredients": [
+      {"name": "canned_tuna", "qty": 160, "unit": "g"},
+      {"name": "mayonnaise", "qty": 2, "unit": "tbsp"},
+      {"name": "mustard", "qty": 1, "unit": "tsp"},
+      {"name": "celery", "qty": 0.5, "unit": "count"},
+      {"name": "onion", "qty": 0.25, "unit": "count"},
+      {"name": "bread_slice", "qty": 4, "unit": "count"},
+      {"name": "salt", "qty": 0.25, "unit": "tsp"},
+      {"name": "black_pepper", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Finely dice celery and onion.",
+      "Mix canned_tuna, mayonnaise, mustard, celery, onion, salt, and black_pepper.",
+      "Spread on bread_slice and close sandwiches. Serve."
+    ]
+  },
+  {
+    "id": "lentil_soup",
+    "title": "One-Pot Lentil Soup",
+    "time_minutes": 30,
+    "diet_tags": ["vegetarian", "easy", "budget"],
+    "servings": 4,
+    "calories_per_serving": 310,
+    "ingredients": [
+      {"name": "dry_lentils", "qty": 250, "unit": "g"},
+      {"name": "onion", "qty": 1, "unit": "count"},
+      {"name": "carrot", "qty": 1, "unit": "count"},
+      {"name": "celery", "qty": 1, "unit": "count"},
+      {"name": "garlic", "qty": 2, "unit": "clove"},
+      {"name": "vegetable_broth", "qty": 1000, "unit": "ml"},
+      {"name": "olive_oil", "qty": 1, "unit": "tbsp"},
+      {"name": "salt", "qty": 0.5, "unit": "tsp"},
+      {"name": "black_pepper", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Dice onion, carrot, celery; mince garlic.",
+      "Saute onion, carrot, celery in olive_oil 3-4 minutes.",
+      "Add garlic 30 seconds; stir.",
+      "Add dry_lentils and vegetable_broth; bring to a boil.",
+      "Reduce heat; simmer 20-25 minutes until lentils are tender.",
+      "Season with salt and black_pepper; serve."
+    ]
+  },
+  {
+    "id": "greek_salad",
+    "title": "Quick Greek Salad",
+    "time_minutes": 10,
+    "diet_tags": ["vegetarian", "quick", "easy", "gluten_free"],
+    "servings": 2,
+    "calories_per_serving": 280,
+    "ingredients": [
+      {"name": "cucumber", "qty": 1, "unit": "count"},
+      {"name": "tomato", "qty": 2, "unit": "count"},
+      {"name": "red_onion", "qty": 0.25, "unit": "count"},
+      {"name": "feta_cheese", "qty": 60, "unit": "g"},
+      {"name": "olive", "qty": 12, "unit": "count"},
+      {"name": "olive_oil", "qty": 1, "unit": "tbsp"},
+      {"name": "red_wine_vinegar", "qty": 1, "unit": "tbsp"},
+      {"name": "oregano_dried", "qty": 0.5, "unit": "tsp"},
+      {"name": "salt", "qty": 0.25, "unit": "tsp"},
+      {"name": "black_pepper", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Chop cucumber and tomato; thinly slice red_onion.",
+      "Combine vegetables with olive and feta_cheese.",
+      "Whisk olive_oil, red_wine_vinegar, oregano_dried, salt, and black_pepper.",
+      "Toss salad with dressing and serve."
+    ]
+  },
+  {
+    "id": "banana_pancakes",
+    "title": "Banana Pancakes",
+    "time_minutes": 20,
+    "diet_tags": ["breakfast", "vegetarian", "easy"],
+    "servings": 2,
+    "calories_per_serving": 390,
+    "ingredients": [
+      {"name": "banana", "qty": 1, "unit": "count"},
+      {"name": "egg", "qty": 1, "unit": "count"},
+      {"name": "milk", "qty": 150, "unit": "ml"},
+      {"name": "all_purpose_flour", "qty": 120, "unit": "g"},
+      {"name": "baking_powder", "qty": 1, "unit": "tsp"},
+      {"name": "sugar", "qty": 1, "unit": "tbsp"},
+      {"name": "butter", "qty": 1, "unit": "tbsp"},
+      {"name": "salt", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Mash banana in a bowl; whisk in egg, milk, and sugar.",
+      "Add all_purpose_flour, baking_powder, and salt; mix until just combined.",
+      "Heat butter on a griddle over medium; ladle batter.",
+      "Cook until bubbles form, flip, and cook until golden. Serve."
+    ]
+  },
+  {
+    "id": "avocado_toast",
+    "title": "Avocado Toast",
+    "time_minutes": 7,
+    "diet_tags": ["vegetarian", "quick", "easy"],
+    "servings": 1,
+    "calories_per_serving": 360,
+    "ingredients": [
+      {"name": "bread_slice", "qty": 2, "unit": "count"},
+      {"name": "avocado", "qty": 1, "unit": "count"},
+      {"name": "lemon_juice", "qty": 1, "unit": "tsp"},
+      {"name": "salt", "qty": 0.25, "unit": "tsp"},
+      {"name": "chili_flake", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Toast bread_slice to preference.",
+      "Mash avocado with lemon_juice, salt, and chili_flake.",
+      "Spread on toast and serve."
+    ]
+  },
+  {
+    "id": "bean_quesadilla",
+    "title": "Bean & Cheese Quesadilla",
+    "time_minutes": 12,
+    "diet_tags": ["quick", "easy", "vegetarian", "budget"],
+    "servings": 2,
+    "calories_per_serving": 420,
+    "ingredients": [
+      {"name": "flour_tortilla", "qty": 2, "unit": "count"},
+      {"name": "cheese", "qty": 150, "unit": "g"},
+      {"name": "canned_black_beans", "qty": 120, "unit": "g"},
+      {"name": "olive_oil", "qty": 1, "unit": "tbsp"},
+      {"name": "cumin", "qty": 0.5, "unit": "tsp"},
+      {"name": "salt", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Rinse and drain canned_black_beans; season with cumin and salt.",
+      "Heat olive_oil in a skillet over medium.",
+      "Place flour_tortilla, add cheese and beans on half; fold.",
+      "Cook 2-3 minutes per side until golden and cheese melts. Repeat. Slice and serve."
+    ]
+  },
+  {
+    "id": "baked_potato",
+    "title": "Crispy Baked Potato",
+    "time_minutes": 50,
+    "diet_tags": ["vegetarian", "easy", "budget", "gluten_free"],
+    "servings": 2,
+    "calories_per_serving": 300,
+    "ingredients": [
+      {"name": "russet_potato", "qty": 2, "unit": "count"},
+      {"name": "olive_oil", "qty": 1, "unit": "tbsp"},
+      {"name": "salt", "qty": 0.5, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Preheat oven to 220C/425F.",
+      "Scrub russet_potato; poke holes with a fork. Rub with olive_oil and salt.",
+      "Bake on a rack 45-50 minutes until skins are crisp and centers tender.",
+      "Split and serve with desired toppings."
+    ]
+  },
+  {
+    "id": "peanut_noodles",
+    "title": "10-Min Peanut Noodles",
+    "time_minutes": 10,
+    "diet_tags": ["vegetarian", "quick", "easy"],
+    "servings": 2,
+    "calories_per_serving": 520,
+    "ingredients": [
+      {"name": "noodles", "qty": 200, "unit": "g"},
+      {"name": "peanut_butter", "qty": 2, "unit": "tbsp"},
+      {"name": "soy_sauce", "qty": 1.5, "unit": "tbsp"},
+      {"name": "rice_vinegar", "qty": 1, "unit": "tbsp"},
+      {"name": "honey", "qty": 1, "unit": "tbsp"},
+      {"name": "garlic", "qty": 1, "unit": "clove"},
+      {"name": "water", "qty": 2, "unit": "tbsp"}
+    ],
+    "instructions": [
+      "Boil noodles according to package; reserve 2 tbsp cooking water and drain.",
+      "Whisk peanut_butter, soy_sauce, rice_vinegar, honey, water, and minced garlic until smooth.",
+      "Toss noodles with sauce; loosen with reserved water as needed. Serve."
+    ]
+  },
+  {
+    "id": "banana_smoothie",
+    "title": "Banana Oat Smoothie",
+    "time_minutes": 5,
+    "diet_tags": ["breakfast", "vegetarian", "quick", "gluten_free_optional"],
+    "servings": 1,
+    "calories_per_serving": 350,
+    "ingredients": [
+      {"name": "banana", "qty": 1, "unit": "count"},
+      {"name": "milk", "qty": 250, "unit": "ml"},
+      {"name": "rolled_oats", "qty": 30, "unit": "g"},
+      {"name": "peanut_butter", "qty": 1, "unit": "tbsp"},
+      {"name": "honey", "qty": 1, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Add all ingredients to a blender.",
+      "Blend until smooth and creamy. Serve cold."
+    ]
+  },
+  {
+    "id": "sheet_pan_sausage_veggies",
+    "title": "Sheet-Pan Sausage & Veggies",
+    "time_minutes": 30,
+    "diet_tags": ["easy", "one_pan"],
+    "servings": 3,
+    "calories_per_serving": 520,
+    "ingredients": [
+      {"name": "smoked_sausage", "qty": 300, "unit": "g"},
+      {"name": "potato", "qty": 300, "unit": "g"},
+      {"name": "bell_pepper", "qty": 1, "unit": "count"},
+      {"name": "onion", "qty": 1, "unit": "count"},
+      {"name": "olive_oil", "qty": 2, "unit": "tbsp"},
+      {"name": "paprika", "qty": 1, "unit": "tsp"},
+      {"name": "salt", "qty": 0.5, "unit": "tsp"},
+      {"name": "black_pepper", "qty": 0.25, "unit": "tsp"}
+    ],
+    "instructions": [
+      "Preheat oven to 220C/425F. Slice smoked_sausage and vegetables.",
+      "Toss with olive_oil, paprika, salt, and black_pepper on a sheet pan.",
+      "Roast 20-25 minutes, stirring once, until browned and tender. Serve."
+    ]
+  }
+]
