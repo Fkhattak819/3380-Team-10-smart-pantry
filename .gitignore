@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Vite build output
+dist/
+.vite/
+
+# Environment variables
+.env
+.env.local
+
+# macOS
+.DS_Store
