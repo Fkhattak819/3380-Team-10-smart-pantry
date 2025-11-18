@@ -25,6 +25,17 @@ class RecipeCard extends Component {
     }));
   };
 
+handleAddMissingToCart = (e) => {e.stopPropagation();
+  const { matchInfo, onAddToCart } = this.props;
+  if (!onAddToCart || !matchInfo || !Array.isArray(matchInfo.missingIngredients)) return;
+  
+  matchInfo.missingIngredients.forEach(ingredient => {
+    const raw = typeof ingredient === 'string' ? ingredient : (ingredient && (ingredient.name || ingredient.label));
+    const name = raw ? String(raw).replace(/_/g, ' ').trim() : '';
+    if (name) onAddToCart(name);
+  });
+}
+
   getMatchColorClass(matchPercentage) {
     if (matchPercentage >= 75) return 'bg-green-100 text-green-800';
     if (matchPercentage >= 50) return 'bg-yellow-100 text-yellow-800';
@@ -166,9 +177,15 @@ class RecipeCard extends Component {
             >
               View Recipe
             </button>
-            <button className="text-gray-600 hover:text-gray-800 transition-colors">
-              <span className="text-lg">CART</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={this.handleAddMissingToCart}
+                className="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+                title="Add Missing Ingredients to Cart"
+              >
+                Add Missing Ingredients to Cart
+              </button>
+            </div>
           </div>
         </div>
       </div>
