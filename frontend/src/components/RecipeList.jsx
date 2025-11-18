@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import RecipeCard from './RecipeCard';
 import { RecipeService } from '../services/RecipeService.js';
-import RecipeModal from './RecipeModal'; // Import the modal
+import RecipeModal from './RecipeModal';
 
 // Recipe list component
 class RecipeList extends Component {
@@ -19,7 +19,7 @@ class RecipeList extends Component {
         all: 0,
         ready: 0,
         almostReady: 0
-      }, // <-- FIX 1: Added the missing comma here
+      },
       selectedRecipe: null,
     };
   }
@@ -206,6 +206,8 @@ class RecipeList extends Component {
                     recipe={recipe}
                     matchInfo={matchInfo}
                     onViewRecipe={this.handleViewRecipe}
+                    onAddMissingToCart={this.handleAddMissingToCart}
+                    onAddToCart={this.props.onAddToCart}
                   />
                 );
               })
