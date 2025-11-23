@@ -7,7 +7,8 @@ class Header extends Component {
   }
 
   render() {
-    const { isSettingsOpen, toggleSettings } = this.props;
+    // Destructure new cart props: cartCount and onOpenCart
+    const { isSettingsOpen, toggleSettings, cartCount, onOpenCart } = this.props;
 
     const menuClass = `w-10 h-10 text-gray-700 hover:text-green-600 cursor-pointer`;
 
@@ -15,7 +16,21 @@ class Header extends Component {
       <header className="bg-white py-8 border-b relative">
         <div className="container mx-auto text-center">
           
-          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 md:right-10">
+          {/* Action container: Cart and Settings Menu */}
+          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 md:right-10 flex items-center space-x-4">
+            
+            {/* Cart Button (Styled like View Recipe button) */}
+            <button 
+              onClick={onOpenCart}
+              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm font-medium flex items-center"
+            >
+              Cart 
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-white text-green-500 font-bold text-xs">
+                {cartCount || 0}
+              </span>
+            </button>
+
+            {/* Settings Menu Button */}
             <button onClick={toggleSettings} className="p-2 focus:outline-none">
               <svg 
                 className={menuClass} 
@@ -23,7 +38,7 @@ class Header extends Component {
                 viewBox="0 0 100 100" 
                 fill="currentColor"
               >
-                {/* Adjusted Y values to decrease the spacing between lines */}
+                {/* Hamburger Icon Lines */}
                 <rect x="15" y="30" width="70" height="6" rx="3" />
                 <rect x="15" y="48" width="70" height="6" rx="3" />
                 <rect x="15" y="66" width="70" height="6" rx="3" />

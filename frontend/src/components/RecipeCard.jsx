@@ -177,15 +177,14 @@ handleAddMissingToCart = (e) => {e.stopPropagation();
             >
               View Recipe
             </button>
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={this.handleAddMissingToCart}
-                className="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
-                title="Add Missing Ingredients to Cart"
-              >
-                Add Missing Ingredients to Cart
-              </button>
-            </div>
+            {/* ADD MISSING INGREDIENTS BUTTON */}
+            <button 
+              onClick={this.handleAddMissingToCart}
+              className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
+              title="Add Missing Ingredients to Cart"
+            >
+              Add Missing Ingredients
+            </button>
           </div>
         </div>
       </div>
