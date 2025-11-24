@@ -143,6 +143,7 @@ class RecipeList extends Component {
 
   render() {
     const { filteredRecipes, isLoading, searchQuery, filterCounts, selectedRecipe } = this.state;
+    const { onAddToCart } = this.props;
 
     if (isLoading) {
       return (
@@ -206,8 +207,7 @@ class RecipeList extends Component {
                     recipe={recipe}
                     matchInfo={matchInfo}
                     onViewRecipe={this.handleViewRecipe}
-                    onAddMissingToCart={this.handleAddMissingToCart}
-                    onAddToCart={this.props.onAddToCart}
+                    onAddToCart={onAddToCart}
                   />
                 );
               })
@@ -215,7 +215,7 @@ class RecipeList extends Component {
           </div>
         </div>
 
-                <RecipeModal 
+        <RecipeModal 
           recipe={selectedRecipe}
           onClose={this.handleCloseModal}
         />
