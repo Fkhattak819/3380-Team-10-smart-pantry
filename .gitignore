@@ -1,13 +1,91 @@
-# Dependencies
-node_modules/
+===================================================================
 
-# Vite build output
-dist/
-.vite/
+SECRETS
 
-# Environment variables
+===================================================================
+
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# macOS
+===================================================================
+
+PYTHON BACKEND
+
+===================================================================
+
+Ignore the virtual environment folder
+
+This is the "sandbox" that holds 'flask', 'pyodbc', etc.
+
+venv/
+.venv/
+
+Ignore Python cache files
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+===================================================================
+
+NODE.JS FRONTEND (Vite, React, Tailwind)
+
+===================================================================
+
+Ignore the massive folder of downloaded packages
+
+This is the one causing all your "permission denied" errors.
+
+node_modules/
+
+Ignore the "dist" folder, which is the built, minified app
+
+dist/
+.dist/
+
+Ignore Vite's cache and temp files
+
+.vite/
+*.log
+
+Ignore npm debug logs
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+===================================================================
+
+IDE / EDITOR / OS FILES
+
+===================================================================
+
+Ignore Visual Studio Code settings
+
+.vscode/
+
+Ignore Operating System files
+
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+===================================================================
+
+CACHE DIRECTORIES
+
+===================================================================
+
+.npm
+.eslintcache
+.stylelintcache
