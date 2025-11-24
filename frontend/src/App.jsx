@@ -30,6 +30,16 @@ class App extends Component {
     window.removeEventListener('offline', this.handleOnlineStatus);
   }
 
+  // NEW: Lifecycle method to control body scrolling
+  componentDidUpdate(prevProps, prevState) {
+    const wasOpen = prevState.isSettingsOpen || prevState.isCartOpen;
+    const isOpen = this.state.isSettingsOpen || this.state.isCartOpen;
+
+    if (wasOpen !== isOpen) {
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    }
+  }
+
   handleOnlineStatus = () => {
     this.setState({ isOnline: navigator.onLine });
   };

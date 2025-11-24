@@ -5,25 +5,61 @@ const dietOptions = [
   'low carb', 'raw', 'no sugar'
 ];
 
+const allergenOptions = [
+  'Celery',
+  'Gluten',
+  'Crustaceans',
+  'Eggs',
+  'Fish',
+  'Lupin',
+  'Milk',
+  'Molluscs',
+  'Mustard',
+  'Peanuts',
+  'Sesame',
+  'Soybeans',
+  'Sulphites',
+];
+
 class SettingsPanel extends Component {
   constructor(props) {
     super(props);
-    // Initialize state for the budget input/slider
     this.state = {
-      maxBudget: 25 // Default placeholder value
+      maxPrepTime: 30, 
+      isAllergensOpen: false,
+      selectedAllergens: allergenOptions.reduce((acc, allergen) => {
+        acc[allergen] = false;
+        return acc;
+      }, {})
     };
   }
 
-  handleBudgetChange = (e) => {
-    // This handler works for both number input (type='number') and slider (type='range').
-    // It updates the state with the new value.
+  handlePrepTimeChange = (e) => {
     const value = parseInt(e.target.value);
-    this.setState({ maxBudget: value >= 0 ? value : 0 });
+    // Constrain input to be between 5 and 60 minutes and ensure it's a multiple of 5 if possible
+    let newTime = value;
+    if (newTime < 5) newTime = 5;
+    if (newTime > 60) newTime = 60;
+    
+    this.setState({ maxPrepTime: newTime });
+  };
+  
+  toggleAllergensDropdown = () => {
+    this.setState(prevState => ({ isAllergensOpen: !prevState.isAllergensOpen }));
+  };
+  
+  handleAllergenToggle = (allergen) => {
+    this.setState(prevState => ({
+      selectedAllergens: {
+        ...prevState.selectedAllergens,
+        [allergen]: !prevState.selectedAllergens[allergen]
+      }
+    }));
   };
 
   render() {
     const { isOpen, onClose } = this.props;
-    const { maxBudget } = this.state; // Destructure maxBudget from state
+    const { maxPrepTime, isAllergensOpen, selectedAllergens } = this.state;
 
     const panelClass = `fixed top-0 right-0 w-80 h-full bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out 
       ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
@@ -38,7 +74,40 @@ class SettingsPanel extends Component {
           <div className="p-6 h-full flex flex-col">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
               Recipe Filters
-            </h2>
+            </h2 >
+
+            {/* Allergen Filter Dropdown with Checkboxes */}
+            <div className="mb-6 z-10">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Exclude Allergens
+              </label>
+              <div 
+                className="p-2 border border-gray-300 rounded-lg cursor-pointer bg-white flex justify-between items-center hover:border-green-500"
+                onClick={this.toggleAllergensDropdown}
+              >
+                <span>Select Allergens to Exclude</span>
+                <span className="text-gray-500">{isAllergensOpen ? '▲' : '▼'}</span>
+              </div>
+              
+              {isAllergensOpen && (
+                <div className="absolute w-72 bg-white border border-gray-300 mt-1 rounded-lg shadow-lg p-3 max-h-48 overflow-y-auto">
+                  {allergenOptions.map(allergen => (
+                    <div key={allergen} className="flex items-center space-x-2 py-1">
+                      <input 
+                        type="checkbox" 
+                        id={allergen} 
+                        checked={selectedAllergens[allergen]}
+                        onChange={() => this.handleAllergenToggle(allergen)}
+                        className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                      <label htmlFor={allergen} className="text-sm text-gray-700 cursor-pointer">
+                        {allergen}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Filter Dropdown 1: Food Type */}
             <div className="mb-6">
@@ -84,27 +153,29 @@ class SettingsPanel extends Component {
               </div>
             </div>
 
-            {/* Max Budget: Input Field (Precise) and Slider (Quick) */}
+            {/* Max Prep Time: Input Field (Precise) and Slider (Quick) */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="max-budget-input">
-                Max Budget ($)
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="max-prep-time-input">
+                Max Prep Time (min)
               </label>
               <input 
-                id="max-budget-input"
+                id="max-prep-time-input"
                 type="number"
-                min="0"
-                placeholder="50"
-                value={maxBudget} // Bound to state
-                onChange={this.handleBudgetChange} // Controls state
+                min="5"
+                max="60"
+                step="5"
+                placeholder="30"
+                value={maxPrepTime}
+                onChange={this.handlePrepTimeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-gray-800 mb-3" 
               />
               <input 
                 type="range"
-                min="0"
-                max="500" // Set a suitable max range for the slider
-                step="1" // Allows for smooth dragging
-                value={maxBudget} // Bound to state
-                onChange={this.handleBudgetChange} // Controls state
+                min="5"
+                max="60"
+                step="5"
+                value={maxPrepTime}
+                onChange={this.handlePrepTimeChange}
                 className="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer" 
               />
             </div>

@@ -86,7 +86,7 @@ class RecipeList extends Component {
         filteredRecipes = this.recipeService.getRecipesByReadiness().ready;
         break;
       case 'almostReady':
-        filteredRecipes = this.recipeService.getRecipesByReadiness().ready;
+        filteredRecipes = this.recipeService.getRecipesByReadiness().almostReady;
         break;
       default:
         filteredRecipes = this.state.recipes;
