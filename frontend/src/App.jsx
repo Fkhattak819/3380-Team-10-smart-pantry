@@ -3,7 +3,8 @@ import Header from './components/Header'
 import Navigation from './components/Navigation'
 import RecipeList from './components/RecipeList'
 import InventoryList from './components/InventoryList'
-import CartModal from './components/CartModal';
+import SettingsPanel from './components/SettingsPanel'
+import CartModal from './components/CartModal' // Import the cart modal
 
 // Main App component
 class App extends Component {
@@ -12,26 +13,16 @@ class App extends Component {
     this.state = {
       activeTab: 'recipes',
       isOnline: navigator.onLine,
-      cart: [],
+      isSettingsOpen: false,
+      // Cart State
+      cart: [], 
       isCartOpen: false,
     };
   }
 
-  openCart = () => {
-    this.setState({ isCartOpen: true });
-  };
-  closeCart = () => {
-    this.setState({ isCartOpen: false });
-  };
-
   componentDidMount() {
     window.addEventListener('online', this.handleOnlineStatus);
     window.addEventListener('offline', this.handleOnlineStatus);
-
-    const raw = localStorage.getItem('cart');
-    if (raw) {
-      this.setState({ cart: JSON.parse(raw) });
-    }
   }
 
   componentWillUnmount() {
@@ -39,9 +30,13 @@ class App extends Component {
     window.removeEventListener('offline', this.handleOnlineStatus);
   }
 
+  // NEW: Lifecycle method to control body scrolling
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.cart !== this.state.cart) {
-      localStorage.setItem('cart', JSON.stringify(this.state.cart));
+    const wasOpen = prevState.isSettingsOpen || prevState.isCartOpen;
+    const isOpen = this.state.isSettingsOpen || this.state.isCartOpen;
+
+    if (wasOpen !== isOpen) {
+      document.body.style.overflow = isOpen ? 'hidden' : '';
     }
   }
 
@@ -50,66 +45,102 @@ class App extends Component {
   };
 
   handleTabChange = (tab) => {
-    this.setState({ activeTab: tab });
+    this.setState({ activeTab: tab, isSettingsOpen: false, isCartOpen: false });
   };
 
-  addToCart = (ingredientName) => {
-    if (!ingredientName) return;
-    this.setState((prevState) => {
-      if (!prevState.cart.includes(ingredientName)) {
-        return {
-          cart: [...prevState.cart, ingredientName]
-        };
-      }
-      return null;
-    });
-  }
+  toggleSettings = () => {
+    this.setState(prevState => ({ 
+      isSettingsOpen: !prevState.isSettingsOpen,
+      isCartOpen: false, // Close cart if settings open
+    }));
+  };
+  
+  // Cart Handlers
+  handleOpenCart = () => {
+    this.setState({ isCartOpen: true, isSettingsOpen: false });
+  };
 
-  removeFromCart = (ingredientName) => {
-    this.setState((prevState) => ({
-      cart: prevState.cart.filter(item => item !== ingredientName)
+  handleCloseCart = () => {
+    this.setState({ isCartOpen: false });
+  };
+  
+  handleAddToCart = (ingredientName) => {
+    // FIX: Check if the ingredient already exists before adding it
+    this.setState(prevState => {
+      if (prevState.cart.includes(ingredientName)) {
+        return null; // Return null to prevent the state update
+      }
+      
+      // If unique, add it to the cart
+      return {
+        cart: [...prevState.cart, ingredientName]
+      };
+    });
+  };
+
+  handleRemoveCartItem = (ingredientName) => {
+    // Removes the first occurrence of the ingredient name from the cart
+    this.setState(prevState => ({
+      cart: prevState.cart.filter((item, index) => {
+        // Find the index of the first item matching ingredientName
+        const itemIndexToRemove = prevState.cart.findIndex(i => i === ingredientName);
+        // Only return true (keep the item) if the current index is NOT the index to remove
+        return index !== itemIndexToRemove;
+      })
     }));
   };
 
-  clearCart = () => {
+  handleClearCart = () => {
     this.setState({ cart: [] });
   };
 
   renderContent() {
+    // Pass the handler down to RecipeList
     switch (this.state.activeTab) {
       case 'recipes':
-        return <RecipeList onAddToCart={this.addToCart} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} />;
       case 'pantry':
         return <InventoryList />;
       default:
-        return <RecipeList onAddToCart={this.addToCart} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} />;
     }
   }
 
   render() {
+    const { activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
+
     return (
       <div className="App min-h-screen bg-gray-100">
         <Header 
-          cart={this.state.cart} 
-          onClearCart={this.clearCart}
-          onOpenCart={this.openCart}
+          isSettingsOpen={isSettingsOpen} 
+          toggleSettings={this.toggleSettings}
+          // Pass cart state and handlers to Header
+          cartCount={cart.length}
+          onOpenCart={this.handleOpenCart}
         />
         <div className="container mx-auto px-4 py-8">
           <Navigation 
-            activeTab={this.state.activeTab}
+            activeTab={activeTab}
             onTabChange={this.handleTabChange}
           />
           {this.renderContent()}
         </div>
-        <CartModal
-          isOpen={this.state.isCartOpen}
-          cart={this.state.cart}
-          onClose={this.closeCart}
-          onClearCart={this.clearCart}
-          onRemoveItem={this.removeFromCart}
+        
+        <SettingsPanel 
+          isOpen={isSettingsOpen} 
+          onClose={this.toggleSettings} 
         />
-
-        {!this.state.isOnline && (
+        
+        {/* Render the Cart Modal */}
+        <CartModal
+          isOpen={isCartOpen}
+          cart={cart}
+          onClose={this.handleCloseCart}
+          onRemoveItem={this.handleRemoveCartItem}
+          onClearCart={this.handleClearCart}
+        />
+        
+        {!isOnline && (
           <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
             Warning: You're offline
           </div>
