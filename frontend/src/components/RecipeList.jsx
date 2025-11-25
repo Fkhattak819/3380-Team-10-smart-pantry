@@ -31,11 +31,39 @@ class RecipeList extends Component {
 
   async loadRecipes() {
     try {
-      const response = await fetch('/recipes.json');
-      const recipesData = await response.json();
+      // Fetch recipe matches from Flask backend
+      const userId = 1; // Default user ID - you can make this dynamic later
+      const response = await fetch(`/api/recipes/matches?userId=${userId}`);
       
-      this.recipeService.loadRecipesFromJSON(recipesData);
-      this.updateRecipeList();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const matchesData = await response.json();
+      
+      // Transform API response to match Recipe model format
+      const recipesData = matchesData.map(match => ({
+        id: match.RecipeID,
+        title: match.Title,
+        time_minutes: match.TimeMinutes,
+        servings: match.Servings,
+        calories_per_serving: match.CaloriesPerServing,
+        matchPercentage: match.MatchPercentage,
+        totalIngredients: match.TotalIngredients,
+        ingredientsUserHas: match.IngredientsUserHas
+      }));
+      
+      // Store recipes with match info
+      this.setState({
+        recipes: recipesData,
+        filteredRecipes: recipesData,
+        filterCounts: {
+          all: recipesData.length,
+          ready: recipesData.filter(r => r.matchPercentage >= 100).length,
+          almostReady: recipesData.filter(r => r.matchPercentage >= 75 && r.matchPercentage < 100).length
+        },
+        isLoading: false
+      });
     } catch (error) {
       console.error('Error loading recipes:', error);
       this.setState({ isLoading: false });
@@ -44,9 +72,16 @@ class RecipeList extends Component {
 
   async setupAvailableIngredients() {
     try {
-      const response = await fetch('/pantry.json');
+      // Fetch pantry from Flask backend
+      const userId = 1; // Default user ID
+      const response = await fetch(`/api/pantry?userId=${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const pantryData = await response.json();
-      const ingredientNames = pantryData.map(item => item.name.toLowerCase());
+      const ingredientNames = pantryData.map(item => item.Name.toLowerCase());
       this.recipeService.setAvailableIngredients(ingredientNames);
     } catch (error) {
       console.error('Error loading pantry data for ingredients:', error);
@@ -60,17 +95,11 @@ class RecipeList extends Component {
   }
 
   updateRecipeList() {
-    const recipes = this.recipeService.getAllRecipes();
-    const { ready, almostReady } = this.recipeService.getRecipesByReadiness();
-    
+    // Recipes are now loaded directly from API, so this method may not be needed
+    // But keeping it for compatibility
+    const recipes = this.state.recipes || [];
     this.setState({
-      recipes,
       filteredRecipes: recipes,
-      filterCounts: {
-        all: recipes.length,
-        ready: ready.length,
-        almostReady: almostReady.length
-      },
       isLoading: false
     });
   }
@@ -83,10 +112,10 @@ class RecipeList extends Component {
         filteredRecipes = this.state.recipes;
         break;
       case 'ready':
-        filteredRecipes = this.recipeService.getRecipesByReadiness().ready;
+        filteredRecipes = this.state.recipes.filter(r => r.matchPercentage >= 100);
         break;
       case 'almostReady':
-        filteredRecipes = this.recipeService.getRecipesByReadiness().almostReady;
+        filteredRecipes = this.state.recipes.filter(r => r.matchPercentage >= 75 && r.matchPercentage < 100);
         break;
       default:
         filteredRecipes = this.state.recipes;
@@ -110,9 +139,9 @@ class RecipeList extends Component {
     const { activeFilter } = this.state;
     switch (activeFilter) {
       case 'ready':
-        return this.recipeService.getRecipesByReadiness().ready;
+        return this.state.recipes.filter(r => r.matchPercentage >= 100);
       case 'almostReady':
-        return this.recipeService.getRecipesByReadiness().almostReady;
+        return this.state.recipes.filter(r => r.matchPercentage >= 75 && r.matchPercentage < 100);
       default:
         return this.state.recipes;
     }
@@ -120,11 +149,45 @@ class RecipeList extends Component {
 
   applySearchFilter(recipes, query = this.state.searchQuery) {
     if (!query.trim()) return recipes;
-    return this.recipeService.searchRecipes(query);
+    const lowerQuery = query.toLowerCase();
+    return recipes.filter(recipe => 
+      recipe.title.toLowerCase().includes(lowerQuery)
+    );
   }
 
-  handleViewRecipe = (recipe) => {
-    this.setState({ selectedRecipe: recipe });
+  handleViewRecipe = async (recipe) => {
+    try {
+      // Fetch full recipe details from API
+      const response = await fetch(`/api/recipe/${recipe.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const recipeDetails = await response.json();
+      
+      // Transform API response to match Recipe model format
+      const fullRecipe = {
+        id: recipeDetails.RecipeID,
+        title: recipeDetails.Title,
+        time_minutes: recipeDetails.TimeMinutes,
+        servings: recipeDetails.Servings,
+        calories_per_serving: recipeDetails.CaloriesPerServing,
+        ingredients: recipeDetails.ingredients.map(ing => ({
+          name: ing.Name,
+          qty: ing.Quantity,
+          unit: ing.Unit || ''
+        })),
+        instructions: recipeDetails.instructions.map(inst => inst.StepText),
+        dietTags: recipeDetails.tags || []
+      };
+      
+      this.setState({ selectedRecipe: fullRecipe });
+    } catch (error) {
+      console.error('Error loading recipe details:', error);
+      // Fallback to basic recipe data if API fails
+      this.setState({ selectedRecipe: recipe });
+    }
   };
   
   handleCloseModal = () => {
@@ -200,7 +263,16 @@ class RecipeList extends Component {
               </div>
             ) : (
               filteredRecipes.map(recipe => {
-                const matchInfo = this.recipeService.getRecipeWithMatchInfo(recipe);
+                // Create matchInfo from recipe data
+                const matchInfo = {
+                  matchPercentage: recipe.matchPercentage || 0,
+                  totalIngredients: recipe.totalIngredients || 0,
+                  availableIngredients: recipe.ingredientsUserHas || 0,
+                  missingIngredients: [],
+                  status: recipe.matchPercentage >= 100 ? 'ready' : 
+                          recipe.matchPercentage >= 75 ? 'almost-ready' : 'needs-ingredients'
+                };
+                
                 return (
                   <RecipeCard
                     key={recipe.id}

@@ -19,13 +19,25 @@ class InventoryList extends Component {
 
   async loadPantryData() {
     try {
-      const response = await fetch('/pantry.json');
+      // Fetch pantry from Flask backend
+      const userId = 1; // Default user ID - you can make this dynamic later
+      const response = await fetch(`/api/pantry?userId=${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const pantryData = await response.json();
       
       this.pantryService.clearAll();
       
+      // Transform API response to match PantryItem format
       pantryData.forEach(item => {
-        this.pantryService.addItem(item.name, item.expiryDate, item.qty);
+        // Use ExpiryDate from API if available, otherwise use default (7 days from now)
+        const expiryDate = item.ExpiryDate || item.expiryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        // Convert to Date object for PantryItem
+        const expiryDateObj = new Date(expiryDate);
+        this.pantryService.addItem(item.Name, expiryDateObj, item.Quantity || item.qty || 1);
       });
       
       this.updateItemsList();
@@ -36,10 +48,8 @@ class InventoryList extends Component {
   }
 
   initializeSampleData() {
-    this.pantryService.addItem('Milk', '2024-12-15', 2);
-    this.pantryService.addItem('Bread', '2024-12-12', 1);
-    this.pantryService.addItem('Eggs', '2024-12-20', 12);
-    this.updateItemsList();
+    // Fallback: Show empty state if API fails
+    this.setState({ items: [] });
   }
 
   updateItemsList() {
@@ -52,26 +62,82 @@ class InventoryList extends Component {
     }));
   };
 
-  handleAddItem = (e) => {
+  handleAddItem = async (e) => {
     e.preventDefault();
     const { name, expiryDate, quantity } = this.state.newItem;
+    const userId = 1; // Default user ID - make dynamic later
+    
+    // Validate input
+    if (!name || !name.trim()) {
+      alert('Please enter an item name');
+      return;
+    }
+    
+    if (!expiryDate) {
+      alert('Please select an expiry date');
+      return;
+    }
     
     try {
-      this.pantryService.addItem(name, expiryDate, quantity);
+      // Normalize ingredient name (lowercase, replace spaces with underscores)
+      const ingredientName = name.toLowerCase().trim().replace(/\s+/g, '_');
+      
+      // Prepare JSON payload
+      const payload = {
+        userId: userId,
+        ingredientName: ingredientName,
+        quantity: parseFloat(quantity) || 1,
+        expiryDate: expiryDate || null
+      };
+      
+      console.log('Sending payload:', payload);
+      
+      // Call Flask API to add item
+      const response = await fetch('/api/pantry/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to add item');
+      }
+
+      // Reload pantry data from API
+      await this.loadPantryData();
+      
       this.setState({
         newItem: { name: '', expiryDate: '', quantity: 1 }
       });
-      this.updateItemsList();
     } catch (error) {
+      console.error('Error adding item:', error);
       alert('Error adding item: ' + error.message);
     }
   };
 
-  handleRemoveItem = (id) => {
+  handleRemoveItem = async (item) => {
+    const userId = 1; // Default user ID - make dynamic later
+    const ingredientName = item.name.toLowerCase().replace(/\s+/g, '_');
+    
     try {
-      this.pantryService.removeItem(id);
-      this.updateItemsList();
+      // Call Flask API to remove item
+      const response = await fetch(`/api/pantry?userId=${userId}&ingredientName=${encodeURIComponent(ingredientName)}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove item');
+      }
+
+      // Reload pantry data from API
+      await this.loadPantryData();
     } catch (error) {
+      console.error('Error removing item:', error);
       alert('Error removing item: ' + error.message);
     }
   };
@@ -235,7 +301,7 @@ class InventoryList extends Component {
                   </p>
                 </div>
                 <button
-                  onClick={() => this.handleRemoveItem(item.id)}
+                  onClick={() => this.handleRemoveItem(item)}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 font-medium"
                 >
                   Remove
