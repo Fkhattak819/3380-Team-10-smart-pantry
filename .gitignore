@@ -20,6 +20,8 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env
+.venv
 
 # Editor directories and files
 .vscode/
@@ -37,6 +39,7 @@ lerna-debug.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
 
 # Cache directories
 .npm

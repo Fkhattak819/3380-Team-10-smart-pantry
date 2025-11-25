@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import RecipeCard from './RecipeCard';
 import { RecipeService } from '../services/RecipeService.js';
+import { apiFetch } from '../services/api.js';
 import RecipeModal from './RecipeModal';
 
 // Recipe list component
@@ -33,7 +34,7 @@ class RecipeList extends Component {
     try {
       // Fetch recipe matches from Flask backend
       const userId = 1; // Default user ID - you can make this dynamic later
-      const response = await fetch(`/api/recipes/matches?userId=${userId}`);
+      const response = await apiFetch(`/recipes/matches?userId=${userId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,7 +75,7 @@ class RecipeList extends Component {
     try {
       // Fetch pantry from Flask backend
       const userId = 1; // Default user ID
-      const response = await fetch(`/api/pantry?userId=${userId}`);
+      const response = await apiFetch(`/pantry?userId=${userId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -158,7 +159,7 @@ class RecipeList extends Component {
   handleViewRecipe = async (recipe) => {
     try {
       // Fetch full recipe details from API
-      const response = await fetch(`/api/recipe/${recipe.id}`);
+      const response = await apiFetch(`/recipe/${recipe.id}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
