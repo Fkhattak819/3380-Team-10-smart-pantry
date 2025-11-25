@@ -9,12 +9,24 @@ A pantry management app to track your food inventory and find recipes based on w
 npm install
 ```
 
-2. Start the dev server:
+2. In one terminal, start the backend (Flask on port 5001 by default):
+```bash
+cd backend
+python app.py
+```
+
+3. In another terminal, start the frontend dev server:
 ```bash
 npm run dev
 ```
 
-3. Open your browser to the URL shown in the terminal (usually http://localhost:3000)
+4. Open your browser to the URL shown in the terminal (usually http://localhost:3000). API calls are proxied to the backend on port 5001.
+
+Optional: if your backend runs elsewhere, create `frontend/.env` (or `.env.local`) with:
+```
+VITE_API_BASE=http://your-backend-host:5001/api
+```
+The app will fall back to `/api` when this is not set.
 
 ## What It Does
 
