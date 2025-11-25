@@ -46,19 +46,32 @@ DB_USER=pantry_user
 DB_PASSWORD=your_password
 ```
 
-4. Start the backend:
+4. In one terminal, start the backend (Flask on port 5001 by default):
 ```bash
 source venv/bin/activate  # if using virtual environment
 cd backend
 python app.py
 ```
 
-5. Start the frontend (in a new terminal):
+5. In another terminal, start the frontend dev server:
 ```bash
 npm run dev
 ```
 
-6. Open your browser to the URL shown in the terminal (usually http://localhost:3000)
+6. Open your browser to the URL shown in the terminal (usually http://localhost:3000). API calls are proxied to the backend on port 5001.
+
+Optional: if your backend runs elsewhere, create `frontend/.env` (or `.env.local`) with:
+```
+VITE_API_BASE=http://your-backend-host:5001/api
+```
+The app will fall back to `/api` when this is not set.
+
+## What It Does
+
+- Track items in your pantry with expiry dates
+- Filter items by status (expiring soon, etc.)
+- Get recipe suggestions based on available ingredients
+- View recipe details with ingredients and instructions
 
 ## Project Structure
 
