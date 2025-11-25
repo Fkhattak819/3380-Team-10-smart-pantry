@@ -26,8 +26,14 @@ class RecipeList extends Component {
   }
 
   componentDidMount() {
-    this.loadRecipes();
-    this.setupAvailableIngredients();
+    // Use Promise.allSettled to handle errors gracefully
+    Promise.allSettled([
+      this.loadRecipes(),
+      this.setupAvailableIngredients()
+    ]).catch(error => {
+      console.error('Error in componentDidMount:', error);
+      this.setState({ isLoading: false });
+    });
   }
 
   async loadRecipes() {
