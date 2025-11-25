@@ -28,28 +28,47 @@ app = Flask(__name__)
 CORS(app) 
 
 # --- Database Connection Settings ---
-DB_SERVER = os.getenv('DB_SERVER', 'localhost\\SQLEXPRESS,1433')
-DB_DATABASE = os.getenv('DB_DATABASE', 'pantryDatabase')
-DB_USER = os.getenv('DB_USER', 'pantry_user')
+# Read from .env file
 DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_DATABASE = os.getenv('DB_DATABASE')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+DB_USER = os.getenv('DB_USER')
+DB_ENCRYPT = os.getenv('DB_ENCRYPT', 'false').lower() == 'true'
+TRUST_SERVER_CERT = os.getenv('TRUST_SERVER_CERT', 'true').lower() == 'true'
+
+# Build server string - handle SQL Express instance format
+if '\\' in DB_HOST:
+    server_string = f"{DB_HOST},{DB_PORT}"
+else:
+    server_string = f"{DB_HOST},{DB_PORT}"
 
 if not DB_PASSWORD:
     print("WARNING: DB_PASSWORD not found in .env file.")
 
+if not DB_HOST:
+    print("WARNING: DB_HOST not found in .env file.")
+
+print(f"Connecting to SQL Server: {server_string}")
+print(f"Database: {DB_DATABASE}, User: {DB_USER}")
+
 def get_db_connection():
     try:
         conn_string = (
-            f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-            f"SERVER={DB_SERVER};"
+            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"SERVER={server_string};"
             f"DATABASE={DB_DATABASE};"
             f"UID={DB_USER};"
             f"PWD={DB_PASSWORD};"
             f"TrustServerCertificate=yes;"
+            f"Connection Timeout=10;"
         )
-        conn = pyodbc.connect(conn_string)
+        print(f"Connection string: DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server_string};DATABASE={DB_DATABASE};UID={DB_USER};PWD=***;TrustServerCertificate=yes;Connection Timeout=10;")
+        conn = pyodbc.connect(conn_string, timeout=10)
         return conn
     except Exception as e:
         print(f"Database connection failed: {e}")
+        print(f"Attempted connection to: {server_string}")
         return None
 
 # Helper function
@@ -147,21 +166,44 @@ def get_pantry():
     
     try:
         cursor = conn.cursor()
+        # Check if ExpiryDate column exists
         cursor.execute("""
-            SELECT 
-                p.PantryID, 
-                i.Name, 
-                p.Quantity, 
-                p.Unit, 
-                CASE 
-                    WHEN p.ExpiryDate IS NOT NULL THEN CONVERT(VARCHAR(10), p.ExpiryDate, 120)
-                    ELSE NULL 
-                END as ExpiryDate
-            FROM Pantry p
-            JOIN Ingredients i ON p.IngredientID = i.IngredientID
-            WHERE p.UserID = ?
-            ORDER BY i.Name
-        """, (user_id,))
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'Pantry' AND COLUMN_NAME = 'ExpiryDate'
+        """)
+        has_expiry_date = cursor.fetchone() is not None
+        
+        if has_expiry_date:
+            cursor.execute("""
+                SELECT 
+                    p.PantryID, 
+                    i.Name, 
+                    p.Quantity, 
+                    p.Unit, 
+                    CASE 
+                        WHEN p.ExpiryDate IS NOT NULL THEN CONVERT(VARCHAR(10), p.ExpiryDate, 120)
+                        ELSE NULL 
+                    END as ExpiryDate
+                FROM Pantry p
+                JOIN Ingredients i ON p.IngredientID = i.IngredientID
+                WHERE p.UserID = ?
+                ORDER BY i.Name
+            """, (user_id,))
+        else:
+            # Fallback if ExpiryDate column doesn't exist
+            cursor.execute("""
+                SELECT 
+                    p.PantryID, 
+                    i.Name, 
+                    p.Quantity, 
+                    p.Unit, 
+                    NULL as ExpiryDate
+                FROM Pantry p
+                JOIN Ingredients i ON p.IngredientID = i.IngredientID
+                WHERE p.UserID = ?
+                ORDER BY i.Name
+            """, (user_id,))
         return jsonify(sql_to_dict_list(cursor))
     finally:
         conn.close()
@@ -230,9 +272,6 @@ def add_to_pantry():
             return jsonify({"error": f"Database error: {str(e)}"}), 500
         finally:
             conn.close()
-    except Exception as e:
-        print(f"Request error: {e}")
-        return jsonify({"error": f"Request error: {str(e)}"}), 500
     except Exception as e:
         print(f"Request error: {e}")
         return jsonify({"error": f"Request error: {str(e)}"}), 500
