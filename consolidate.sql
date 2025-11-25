@@ -1,26 +1,33 @@
 /*
 =============================================================================
- RESET NUTRITION FOR IMPORTED RECIPES
+ ADD DIETARY CHECK FLAG
 =============================================================================
- This script resets the Calories and Servings for all imported recipes
- (TheMealDB recipes) back to their defaults.
- 
- This forces the 'enrich_nutrition.py' script to re-process them
- using the newly cleaned ingredient data.
+ Adds a column to track which recipes have already been analyzed by the AI.
 */
 
-PRINT 'Resetting nutrition for imported recipes...';
+-- 1. Add the column if it doesn't exist
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Recipes') AND name = 'IsDietaryChecked')
+BEGIN
+    ALTER TABLE Recipes
+    ADD IsDietaryChecked BIT DEFAULT 0;
+    PRINT 'Column IsDietaryChecked added.';
+END
+GO -- <--- THIS IS THE FIX: Forces the column to be created before continuing
 
--- TheMealDB uses numeric IDs (e.g., '52772').
--- Your manual recipes use text IDs (e.g., 'cheese_omelette').
--- We use ISNUMERIC() to target only the imported ones so we don't
--- overwrite your manual "Cheese Omelette" data.
+-- 2. Backfill: Mark recipes as "Checked" if they already have a dietary tag
+-- This saves the API calls you just made!
+UPDATE Recipes 
+SET IsDietaryChecked = 1 
+WHERE RecipeID IN (
+    SELECT rt.RecipeID 
+    FROM RecipeTags rt 
+    JOIN Tags t ON rt.TagID = t.TagID 
+    WHERE t.TagName IN (
+        'vegan', 'vegetarian', 'pescatarian', 
+        'gluten_free', 'dairy_free', 'egg_free', 'soy_free', 'nut_free', 'shellfish_free',
+        'pork_free', 'beef_free',
+        'keto', 'paleo', 'low_carb', 'no_added_sugar'
+    )
+);
 
-UPDATE Recipes
-SET 
-    CaloriesPerServing = 500, -- The default "needs update" flag
-    Servings = 2              -- The default servings
-WHERE 
-    ISNUMERIC(RecipeID) = 1;  -- Only affects numeric IDs
-
-PRINT 'Reset complete. You can now run enrich_nutrition.py again.';
+PRINT 'Flags updated for existing tags.';
