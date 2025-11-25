@@ -39,7 +39,7 @@ if not DB_PASSWORD:
 def get_db_connection():
     try:
         conn_string = (
-            f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+            f"DRIVER={{ODBC Driver 18 for SQL Server}};"
             f"SERVER={DB_SERVER};"
             f"DATABASE={DB_DATABASE};"
             f"UID={DB_USER};"
