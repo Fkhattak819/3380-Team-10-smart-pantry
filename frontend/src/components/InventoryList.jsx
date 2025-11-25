@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { PantryService } from '../services/PantryService.js';
+import { apiFetch } from '../services/api.js';
 
 // Inventory list component
 class InventoryList extends Component {
@@ -21,7 +22,7 @@ class InventoryList extends Component {
     try {
       // Fetch pantry from Flask backend
       const userId = 1; // Default user ID - you can make this dynamic later
-      const response = await fetch(`/api/pantry?userId=${userId}`);
+      const response = await apiFetch(`/pantry?userId=${userId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -93,7 +94,7 @@ class InventoryList extends Component {
       console.log('Sending payload:', payload);
       
       // Call Flask API to add item
-      const response = await fetch('/api/pantry/add', {
+      const response = await apiFetch('/pantry/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +126,7 @@ class InventoryList extends Component {
     
     try {
       // Call Flask API to remove item
-      const response = await fetch(`/api/pantry?userId=${userId}&ingredientName=${encodeURIComponent(ingredientName)}`, {
+      const response = await apiFetch(`/pantry?userId=${userId}&ingredientName=${encodeURIComponent(ingredientName)}`, {
         method: 'DELETE'
       });
 
