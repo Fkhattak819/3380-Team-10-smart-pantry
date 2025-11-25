@@ -1,5 +1,16 @@
 import React, { Component } from 'react';
 
+// Helper function to format time
+function formatTime(timeMinutes) {
+  if (!timeMinutes) return 'N/A';
+  if (timeMinutes < 60) {
+    return `${timeMinutes} min`;
+  }
+  const hours = Math.floor(timeMinutes / 60);
+  const minutes = timeMinutes % 60;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
 // Recipe card component
 class RecipeCard extends Component {
   constructor(props) {
@@ -136,22 +147,22 @@ handleAddMissingToCart = (e) => {e.stopPropagation();
           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
             <div className="flex items-center space-x-1">
               <span>TIME</span>
-              <span>{recipe.getTimeFormatted()}</span>
+              <span>{formatTime(recipe.time_minutes || recipe.timeMinutes)}</span>
             </div>
             <div className="flex items-center space-x-1">
               <span>CAL</span>
-              <span>{recipe.caloriesPerServing} cal</span>
+              <span>{recipe.calories_per_serving || recipe.caloriesPerServing || 0} cal</span>
             </div>
             <div className="flex items-center space-x-1">
               <span>PEOPLE</span>
-              <span>{recipe.servings}</span>
+              <span>{recipe.servings || 0}</span>
             </div>
           </div>
 
           <div className="mb-3">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
               <span>Ingredients Available</span>
-              <span>{availableIngredients.length}/{recipe.ingredients.length}</span>
+              <span>{availableIngredients.length}/{recipe.totalIngredients || recipe.ingredients?.length || 0}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 

@@ -12,45 +12,69 @@ class InventoryList extends Component {
       items: [],
       newItem: { name: '', expiryDate: '', quantity: 1 },
       searchQuery: '',
-      filterStatus: 'all'
+      filterStatus: 'all',
+      isLoading: true,
+      error: null
     };
+  }
 
+  componentDidMount() {
     this.loadPantryData();
   }
 
   async loadPantryData() {
     try {
+      this.setState({ isLoading: true, error: null });
+      console.log('Loading pantry data...');
+      
       // Fetch pantry from Flask backend
       const userId = 1; // Default user ID - you can make this dynamic later
-      const response = await apiFetch(`/pantry?userId=${userId}`);
+      const url = `/pantry?userId=${userId}`;
+      console.log('Fetching from:', url);
+      
+      const response = await apiFetch(url);
+      console.log('Response status:', response.status, response.statusText);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
       const pantryData = await response.json();
+      console.log('Received pantry data:', pantryData);
       
       this.pantryService.clearAll();
       
       // Transform API response to match PantryItem format
-      pantryData.forEach(item => {
-        // Use ExpiryDate from API if available, otherwise use default (7 days from now)
-        const expiryDate = item.ExpiryDate || item.expiryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        // Convert to Date object for PantryItem
-        const expiryDateObj = new Date(expiryDate);
-        this.pantryService.addItem(item.Name, expiryDateObj, item.Quantity || item.qty || 1);
-      });
+      if (Array.isArray(pantryData)) {
+        pantryData.forEach(item => {
+          try {
+            // Use ExpiryDate from API if available, otherwise use default (7 days from now)
+            const expiryDate = item.ExpiryDate || item.expiryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            // Convert to Date object for PantryItem
+            const expiryDateObj = new Date(expiryDate);
+            this.pantryService.addItem(item.Name, expiryDateObj, item.Quantity || item.qty || 1);
+          } catch (itemError) {
+            console.error('Error processing item:', item, itemError);
+          }
+        });
+      } else {
+        console.warn('Pantry data is not an array:', pantryData);
+      }
       
       this.updateItemsList();
+      this.setState({ isLoading: false });
+      console.log('Pantry data loaded successfully');
     } catch (error) {
       console.error('Error loading pantry data:', error);
-      this.initializeSampleData();
+      console.error('Error stack:', error.stack);
+      this.setState({ 
+        items: [], 
+        isLoading: false, 
+        error: error.message || 'Failed to load pantry data. Make sure backend is running on port 5001.' 
+      });
     }
-  }
-
-  initializeSampleData() {
-    // Fallback: Show empty state if API fails
-    this.setState({ items: [] });
   }
 
   updateItemsList() {
@@ -213,6 +237,36 @@ class InventoryList extends Component {
   }  
 
   render() {
+    const { isLoading, error, items } = this.state;
+    
+    if (isLoading) {
+      return (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Pantry Inventory</h2>
+          <div className="text-center py-8">
+            <p className="text-gray-500">Loading pantry items...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Pantry Inventory</h2>
+          <div className="text-center py-8">
+            <p className="text-red-500 mb-4">Error: {error}</p>
+            <button 
+              onClick={() => this.loadPantryData()} 
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const filteredItems = this.getFilteredItems();
     const filterCounts = this.getFilterCounts();
 
