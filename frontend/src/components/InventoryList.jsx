@@ -62,7 +62,7 @@ class InventoryList extends Component {
       this.setState({ 
         items: [], 
         isLoading: false, 
-        error: error.message || 'Failed to load pantry data. Make sure backend is running on port 5001.' 
+        error: error.message || 'Failed to load pantry data. Make sure the backend is accessible.' 
       });
     }
   }

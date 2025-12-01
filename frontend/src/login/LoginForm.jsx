@@ -1,5 +1,6 @@
 import { useState } from "react"
 import "./auth.css";
+import { authService } from "./authService";
 
 const LoginForm = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState("login") // 'login' or 'signup'
@@ -14,19 +15,12 @@ const LoginForm = ({ onLoginSuccess }) => {
     setLoading(true)
 
     try {
-      // Use the same BASE_URL pattern as the rest of the API
-      const BASE_URL = import.meta.env.VITE_API_URL || 'https://epistemic-postnasal-reid.ngrok-free.dev/api';
-      const endpoint = mode === "login" ? `${BASE_URL}/auth/login` : `${BASE_URL}/auth/signup`
+      // Use authService instead of duplicating fetch logic
+      const data = mode === "login" 
+        ? await authService.login(username, password)
+        : await authService.signup(username, password)
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
+      if (data.error) {
         setError(data.error || "An error occurred")
         return
       }
@@ -37,7 +31,7 @@ const LoginForm = ({ onLoginSuccess }) => {
         username: data.username,
       })
     } catch (err) {
-      setError("Connection failed. Make sure the backend is running.")
+      setError("Connection failed. Make sure the backend is accessible.")
     } finally {
       setLoading(false)
     }

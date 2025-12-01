@@ -46,25 +46,19 @@ DB_USER=pantry_user
 DB_PASSWORD=your_password
 ```
 
-4. In one terminal, start the backend (Flask on port 5001 by default):
-```bash
-source venv/bin/activate  # if using virtual environment
-cd backend
-python app.py
-```
+4. Configure backend API URL (if using remote backend via ngrok):
+   Create `frontend/.env` (or `.env.local`) with:
+   ```
+   VITE_API_URL=https://your-ngrok-url.ngrok-free.dev/api
+   ```
+   If not set, the app defaults to the configured ngrok URL.
 
-5. In another terminal, start the frontend dev server:
+5. Start the frontend dev server:
 ```bash
 npm run dev
 ```
 
-6. Open your browser to the URL shown in the terminal (usually http://localhost:3000). API calls are proxied to the backend on port 5001.
-
-Optional: if your backend runs elsewhere, create `frontend/.env` (or `.env.local`) with:
-```
-VITE_API_BASE=http://your-backend-host:5001/api
-```
-The app will fall back to `/api` when this is not set.
+6. Open your browser to the URL shown in the terminal (usually http://localhost:3000).
 
 ## What It Does
 
