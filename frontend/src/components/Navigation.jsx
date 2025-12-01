@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 
-// Navigation component
 class Navigation extends Component {
   constructor(props) {
     super(props);
@@ -23,13 +22,13 @@ class Navigation extends Component {
   };
 
   getTabClass(tab) {
-    const baseClass = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors";
+    const baseClass = "flex-1 md:flex-none px-4 py-2 text-sm font-medium rounded-full transition-all";
     const isActive = this.state.activeTab === tab;
     
     if (isActive) {
-      return `${baseClass} bg-white border border-gray-300 text-gray-800`;
+      return `${baseClass} bg-emerald-500 text-white shadow-sm`;
     }
-    return `${baseClass} text-gray-600 hover:text-gray-800 hover:bg-gray-100`;
+    return `${baseClass} text-slate-600 hover:text-slate-900 hover:bg-slate-100`;
   }
 
   render() {
@@ -39,16 +38,18 @@ class Navigation extends Component {
     ];
 
     return (
-      <nav className="flex justify-center space-x-2 mb-8">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => this.handleTabChange(tab.id)}
-            className={this.getTabClass(tab.id)}
-          >
-            <span className="font-medium">{tab.label}</span>
-          </button>
-        ))}
+      <nav className="flex justify-center">
+        <div className="inline-flex bg-slate-100 rounded-full p-1 space-x-1">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => this.handleTabChange(tab.id)}
+              className={this.getTabClass(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </nav>
     );
   }

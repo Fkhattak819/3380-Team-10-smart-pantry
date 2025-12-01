@@ -71,26 +71,26 @@ class App extends Component {
   handleCloseCart = () => {
     this.setState({ isCartOpen: false });
   };
-  
+
   handleAddToCart = (ingredientName) => {
-    // Normalize ingredient name for comparison (lowercase, trim)
-    const normalizedName = String(ingredientName).toLowerCase().trim();
-    
-    // FIX: Check if the ingredient already exists before adding it
-    this.setState(prevState => {
-      const normalizedCart = prevState.cart.map(item => String(item).toLowerCase().trim());
-      if (normalizedCart.includes(normalizedName)) {
-        console.log('Ingredient already in cart:', ingredientName);
-        return null; // Return null to prevent the state update
-      }
-      
-      // If unique, add it to the cart
-      console.log('Adding to cart:', ingredientName);
-      return {
-        cart: [...prevState.cart, ingredientName]
-      };
-    });
-  };
+  // Normalize ingredient name for comparison (lowercase, trim)
+  const normalizedName = String(ingredientName).toLowerCase().trim();
+  const normalizedCart = this.state.cart.map(item => String(item).toLowerCase().trim());
+
+  // If it's already there, don't add and return false
+  if (normalizedCart.includes(normalizedName)) {
+    console.log('Ingredient already in cart:', ingredientName);
+    return false;
+  }
+
+  // If unique, add it to the cart and return true
+  console.log('Adding to cart:', ingredientName);
+  this.setState(prevState => ({
+    cart: [...prevState.cart, ingredientName]
+  }));
+
+  return true;
+};
 
   handleRemoveCartItem = (ingredientName) => {
     // Removes the first occurrence of the ingredient name from the cart

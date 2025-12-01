@@ -1,39 +1,46 @@
 import React from 'react';
 
-// Updated to display simple ingredient names (strings)
 export default function CartModal({ isOpen, cart = [], onClose, onClearCart, onRemoveItem }) {
   if (!isOpen) return null;
   const items = Array.isArray(cart) ? cart : [];
 
-  const formatName = (name) => name.replace(/_/g, ' ');
+  const formatName = (name) => String(name).replace(/_/g, ' ');
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
       onClick={() => onClose()}
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-md"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-green-600">Shopping Cart</h2>
-          <button type="button" onClick={() => onClose()} className="text-gray-500 text-2xl">×</button>
+        <div className="flex justify-between items-center border-b border-slate-200 px-5 py-3.5">
+          <h2 className="text-lg font-semibold text-slate-900">Shopping Cart</h2>
+          <button
+            type="button"
+            onClick={() => onClose()}
+            className="text-slate-400 hover:text-slate-700 text-2xl leading-none"
+          >
+            ×
+          </button>
         </div>
 
-        <div className="p-4" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        <div className="px-5 py-4" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           {items.length === 0 ? (
-            <p className="text-sm text-gray-600 text-center">Cart is empty</p>
+            <p className="text-sm text-slate-500 text-center py-4">Cart is empty</p>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-slate-100">
               {items.map((item, i) => (
-                <li key={`${String(item)}-${i}`} className="py-2 text-sm text-gray-800 flex items-center justify-between">
-                  {/* Item is a simple string now */}
+                <li
+                  key={`${String(item)}-${i}`}
+                  className="py-2.5 text-sm text-slate-800 flex items-center justify-between"
+                >
                   <span className="font-medium">{formatName(item)}</span>
                   <button
                     type="button"
-                    onClick={() => onRemoveItem(item)} // Pass the ingredient name string for removal
-                    className="text-gray-500 text-base hover:text-gray-700"
+                    onClick={() => onRemoveItem(item)}
+                    className="text-slate-400 hover:text-slate-700 text-lg"
                     aria-label={`Remove ${formatName(item)}`}
                   >
                     ×
@@ -44,9 +51,21 @@ export default function CartModal({ isOpen, cart = [], onClose, onClearCart, onR
           )}
         </div>
 
-        <div className="border-t p-4 flex justify-end space-x-2">
-          <button type="button" onClick={() => onClearCart()} className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Clear Cart</button>
-          <button type="button" onClick={() => onClose()} className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">Close</button>
+        <div className="border-t border-slate-200 px-5 py-3 flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={() => onClearCart()}
+            className="px-3 py-1.5 rounded-md bg-rose-500 text-white text-xs font-medium hover:bg-rose-600"
+          >
+            Clear cart
+          </button>
+          <button
+            type="button"
+            onClick={() => onClose()}
+            className="px-3 py-1.5 rounded-md bg-emerald-500 text-white text-xs font-medium hover:bg-emerald-600"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

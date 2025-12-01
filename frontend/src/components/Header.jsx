@@ -1,55 +1,62 @@
 import React, { Component } from 'react';
 
-// Header component
 class Header extends Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
-    // Destructure new cart props: cartCount and onOpenCart
     const { isSettingsOpen, toggleSettings, cartCount, onOpenCart } = this.props;
 
-    const menuClass = `w-10 h-10 text-gray-700 hover:text-green-600 cursor-pointer`;
+    const menuClass = `w-8 h-8 text-slate-600 hover:text-emerald-600 cursor-pointer transition-colors`;
 
     return (
-      <header className="bg-white py-8 border-b relative">
-        <div className="container mx-auto text-center">
-          
-          {/* Action container: Cart and Settings Menu */}
-          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 md:right-10 flex items-center space-x-4">
-            
-            {/* Cart Button (Styled like View Recipe button) */}
-            <button 
-              onClick={onOpenCart}
-              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm font-medium flex items-center"
-            >
-              Cart 
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-white text-green-500 font-bold text-xs">
-                {cartCount || 0}
-              </span>
-            </button>
+      <header className="bg-white/90 backdrop-blur border-b border-slate-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            {/* Brand */}
+            <div className="flex items-center space-x-2">
+              <div className="h-9 w-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-xl">
+                SP
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-emerald-600 leading-tight">
+                  SmartPantry
+                </h1>
+                <p className="text-xs text-slate-500">
+                  Your intelligent meal planning companion
+                </p>
+              </div>
+            </div>
 
-            {/* Settings Menu Button */}
-            <button onClick={toggleSettings} className="p-2 focus:outline-none">
-              <svg 
-                className={menuClass} 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 100 100" 
-                fill="currentColor"
+            {/* Actions */}
+            <div className="flex items-center space-x-3">
+              {/* Cart */}
+              <button 
+                onClick={onOpenCart}
+                className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition-colors shadow-sm"
               >
-                {/* Hamburger Icon Lines */}
-                <rect x="15" y="30" width="70" height="6" rx="3" />
-                <rect x="15" y="48" width="70" height="6" rx="3" />
-                <rect x="15" y="66" width="70" height="6" rx="3" />
-              </svg>
-            </button>
-          </div>
+                Cart
+                <span className="ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full bg-white text-emerald-600 text-xs font-semibold">
+                  {cartCount || 0}
+                </span>
+              </button>
 
-          <div className="flex items-center justify-center space-x-3 mb-2">
-            <h1 className="text-4xl font-bold text-green-600">SmartPantry</h1>
+              {/* Settings */}
+              <button
+                onClick={toggleSettings}
+                className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+                aria-label="Open settings"
+              >
+                <svg 
+                  className={menuClass} 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 100 100" 
+                  fill="currentColor"
+                >
+                  <rect x="15" y="30" width="70" height="6" rx="3" />
+                  <rect x="15" y="48" width="70" height="6" rx="3" />
+                  <rect x="15" y="66" width="70" height="6" rx="3" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <p className="text-gray-600 text-lg">Your intelligent meal planning companion</p>
         </div>
       </header>
     );

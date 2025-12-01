@@ -13,7 +13,6 @@ function formatTime(timeMinutes) {
   return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
 }
 
-// Recipe card component
 class RecipeCard extends Component {
   constructor(props) {
     super(props);
@@ -38,7 +37,7 @@ class RecipeCard extends Component {
       isMissingExpanded: !prevState.isMissingExpanded 
     }));
   };
-
+  
   handleAddMissingToCart = async (e) => {
     e.stopPropagation();
     const { recipe, matchInfo, onAddToCart } = this.props;
@@ -47,45 +46,69 @@ class RecipeCard extends Component {
       this.setState({ notification: { message: 'Recipe information is missing', type: 'error' } });
       return;
     }
-
+  
     if (!matchInfo || !Array.isArray(matchInfo.missingIngredients) || matchInfo.missingIngredients.length === 0) {
-      this.setState({ notification: { message: 'No missing ingredients to add', type: 'error' } });
+      this.setState({ notification: { message: 'All ingredients are already in your pantry.', type: 'error' } });
       return;
     }
-
+  
     try {
-      const userId = 1; // Default user ID - you can make this dynamic later
+      const userId = 1;
       const recipeId = recipe.id;
-      
-      // First, add ingredients to local cart state using matchInfo (which we already have)
+  
+      const result = await addMissingToShoppingList(userId, recipeId);
+  
+      if (result && typeof result.addedCount === 'number' && result.addedCount === 0) {
+        this.setState({ 
+          notification: { 
+            message: 'These ingredients are already in your pantry.', 
+            type: 'error' 
+          } 
+        });
+        return;
+      }
+  
+      let addedToCartCount = 0;
+  
       if (matchInfo.missingIngredients && Array.isArray(matchInfo.missingIngredients) && onAddToCart) {
         matchInfo.missingIngredients.forEach(ing => {
           const ingredientName = typeof ing === 'string' ? ing : (ing.name || ing.label || '');
           if (ingredientName) {
-            // Format ingredient name: replace underscores with spaces and trim
             const formattedName = String(ingredientName).replace(/_/g, ' ').trim();
-            onAddToCart(formattedName);
+            const wasAdded = onAddToCart(formattedName);
+            if (wasAdded) {
+              addedToCartCount += 1;
+            }
           }
         });
       }
-
-      // Then, add to database shopping list via API
-      const result = await addMissingToShoppingList(userId, recipeId);
-      
-      if (result && result.addedCount !== undefined) {
-        const message = result.addedCount > 0 
-          ? `Successfully added ${result.addedCount} missing ingredient(s) to your shopping list!`
-          : 'All ingredients are already in your shopping list.';
-        
-        this.setState({ notification: { message, type: 'success' } });
+  
+      if (addedToCartCount > 0) {
+        this.setState({ 
+          notification: { 
+            message: `Added ${addedToCartCount} ingredient(s) to your cart.`, 
+            type: 'success' 
+          } 
+        });
       } else {
-        this.setState({ notification: { message: 'Missing ingredients added to shopping list!', type: 'success' } });
+        this.setState({ 
+          notification: { 
+            message: 'All of these ingredients are already in your cart.', 
+            type: 'error' 
+          } 
+        });
       }
+  
     } catch (error) {
       console.error('Error adding missing ingredients:', error);
-      this.setState({ notification: { message: 'Failed to add missing ingredients: ' + (error.message || 'Unknown error'), type: 'error' } });
+      this.setState({ 
+        notification: { 
+          message: 'Failed to add missing ingredients: ' + (error.message || 'Unknown error'), 
+          type: 'error' 
+        } 
+      });
     }
-  }
+  };
 
   handleNotificationClose = () => {
     this.setState({ notification: null });
@@ -100,20 +123,20 @@ class RecipeCard extends Component {
   getStatusColorClass(status) {
     switch (status) {
       case 'ready':
-        return 'border-green-300 bg-green-50';
+        return 'border-emerald-300 bg-emerald-50';
       case 'almost-ready':
-        return 'border-green-300 bg-green-50';
+        return 'border-amber-200 bg-amber-50/40';
       case 'needs-ingredients':
-        return 'border-red-300 bg-red-50';
+        return 'border-rose-200 bg-rose-50/40';
       default:
-        return 'border-gray-300 bg-white';
+        return 'border-slate-200 bg-white';
     }
   }
 
   getProgressBarColor(matchPercentage) {
-    if (matchPercentage >= 75) return 'bg-green-500';
-    if (matchPercentage >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (matchPercentage >= 75) return 'bg-emerald-500';
+    if (matchPercentage >= 50) return 'bg-amber-500';
+    return 'bg-rose-500';
   }
 
   renderMissingIngredients() {
@@ -121,35 +144,44 @@ class RecipeCard extends Component {
     const { missingIngredients } = this.props.matchInfo;
     
     const missingNames = missingIngredients.map(ing => ing.name.replace(/_/g, ' '));
-    const MAX_DISPLAY_MISSING = 2;
+    const MAX_DISPLAY_MISSING = 3;
 
     if (missingNames.length === 0) {
       return null;
     }
 
-    if (missingNames.length <= MAX_DISPLAY_MISSING || isMissingExpanded) {
-      let content = missingNames.join(', ');
-      
-      if (missingNames.length > MAX_DISPLAY_MISSING) {
-        content = (
-          <>
-            {content}
-            <button onClick={this.toggleMissing} className="ml-1 text-blue-500 hover:underline text-xs focus:outline-none">
-              (show less)
-            </button>
-          </>
-        );
-      }
-      return content;
-    }
+    const namesToShow = isMissingExpanded
+      ? missingNames
+      : missingNames.slice(0, MAX_DISPLAY_MISSING);
 
-    const truncatedList = missingNames.slice(0, MAX_DISPLAY_MISSING).join(', ');
     return (
       <>
-        {truncatedList}
-        <button onClick={this.toggleMissing} className="ml-1 text-blue-500 hover:underline text-xs focus:outline-none">
-          (...)
-        </button>
+        <div className="flex flex-wrap gap-1">
+          {namesToShow.map(name => (
+            <span
+              key={name}
+              className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs"
+            >
+              {name}
+            </span>
+          ))}
+          {missingNames.length > MAX_DISPLAY_MISSING && !isMissingExpanded && (
+            <button
+              onClick={this.toggleMissing}
+              className="text-[11px] text-sky-600 hover:underline ml-1"
+            >
+              +{missingNames.length - MAX_DISPLAY_MISSING} more
+            </button>
+          )}
+        </div>
+        {isMissingExpanded && missingNames.length > MAX_DISPLAY_MISSING && (
+          <button
+            onClick={this.toggleMissing}
+            className="mt-1 text-[11px] text-sky-600 hover:underline"
+          >
+            Show less
+          </button>
+        )}
       </>
     );
   }
@@ -173,103 +205,125 @@ class RecipeCard extends Component {
             onClose={this.handleNotificationClose}
           />
         )}
-        <div 
-          className={`bg-white rounded-lg shadow-md overflow-hidden transition-all duration-200 ${
-            isHovered ? 'shadow-lg transform scale-105' : ''
+
+        <div
+          className={`bg-white rounded-xl border overflow-hidden shadow-sm transition-all duration-200 ${
+            isHovered ? 'shadow-md -translate-y-1' : ''
           } ${this.getStatusColorClass(status)}`}
           onMouseEnter={this.handleMouseEnter}
           onMouseLeave={this.handleMouseLeave}
         >
-        <div className="relative h-48 bg-white overflow-hidden">
-          {/* Show image if available, otherwise show placeholder */}
-          {recipe.imageURL ? (
-            <img 
-              src={recipe.imageURL} 
-              alt={recipe.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Hide image and show placeholder if image fails to load
-                e.target.style.display = 'none';
-                const placeholder = e.target.parentElement.querySelector('.food-placeholder');
-                if (placeholder) placeholder.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          {/* Placeholder shown when no image URL or image fails to load */}
-          <div 
-            className={`absolute inset-0 flex items-center justify-center food-placeholder bg-gray-50 ${recipe.imageURL ? 'hidden' : 'flex'}`}
-          >
-            <span className="text-6xl opacity-50">FOOD</span>
-          </div>
-          <div className="absolute top-2 right-2 z-10">
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${this.getMatchColorClass(matchPercentage)}`}>
-              {matchPercentage}% Match
-            </span>
-          </div>
-        </div>
+          {/* IMAGE HEADER */}
+          <div className="relative h-52 bg-slate-50 overflow-hidden">
+            {recipe.imageURL ? (
+              <img
+                src={recipe.imageURL}
+                alt={recipe.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const placeholder = e.target.parentElement.querySelector('.food-placeholder');
+                  if (placeholder) placeholder.style.display = 'flex';
+                }}
+              />
+            ) : null}
 
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
-            {recipe.title}
-          </h3>
-
-          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-            <div className="flex items-center space-x-1">
-              <span>TIME</span>
-              <span>{formatTime(recipe.time_minutes || recipe.timeMinutes)}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <span>CAL</span>
-              <span>{recipe.calories_per_serving || recipe.caloriesPerServing || 0} cal</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <span>PEOPLE</span>
-              <span>{recipe.servings || 0}</span>
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <div className="flex justify-between text-sm text-gray-600 mb-1">
-              <span>Ingredients Available</span>
-              <span>{typeof availableIngredients === 'number' ? availableIngredients : availableIngredients.length}/{recipe.totalIngredients || recipe.ingredients?.length || 0}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${this.getProgressBarColor(matchPercentage)}`}
-                style={{ width: `${matchPercentage}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          {missingIngredients.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm text-green-600 font-medium mb-1">Missing:</p>
-              <p className="text-xs text-green-600">
-                {this.renderMissingIngredients()}
-              </p>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={() => onViewRecipe(recipe)}
-              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors text-sm font-medium"
+            <div
+              className={`absolute inset-0 flex items-center justify-center food-placeholder bg-slate-100 ${
+                recipe.imageURL ? 'hidden' : 'flex'
+              }`}
             >
-              View Recipe
-            </button>
-            {/* ADD MISSING INGREDIENTS BUTTON - Only show if there are missing ingredients */}
-            {missingIngredients && missingIngredients.length > 0 && (
-              <button 
-                onClick={this.handleAddMissingToCart}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm font-medium"
-                title="Add Missing Ingredients to Shopping List"
+              <span className="text-4xl md:text-5xl tracking-[0.4em] text-slate-300">
+                FOOD
+              </span>
+            </div>
+
+            {/* Match badge */}
+            <div className="absolute top-3 right-3 z-10">
+              <span
+                className={`px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm backdrop-blur ${
+                  this.getMatchColorClass(matchPercentage)
+                }`}
               >
-                Add Missing Ingredients
-              </button>
+                {matchPercentage}% match
+              </span>
+            </div>
+          </div>
+
+          {/* BODY */}
+          <div className="p-4 md:p-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2">
+              {recipe.title}
+            </h3>
+
+            {/* META ROW */}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 mb-3">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100">
+                ⏱ <span className="font-medium">{formatTime(recipe.time_minutes || recipe.timeMinutes)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100">
+                🔥 <span className="font-medium">
+                  {recipe.calories_per_serving || recipe.caloriesPerServing || 0} cal
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100">
+                👥 <span className="font-medium">
+                  {recipe.servings || 0} serving{(recipe.servings || 0) === 1 ? '' : 's'}
+                </span>
+              </span>
+            </div>
+
+            {/* PROGRESS BAR */}
+            <div className="mb-3">
+              <div className="flex justify-between text-[11px] text-slate-500 mb-1">
+                <span>Ingredients available</span>
+                <span className="font-medium text-slate-700">
+                  {typeof availableIngredients === 'number'
+                    ? availableIngredients
+                    : availableIngredients.length}
+                  /
+                  {recipe.totalIngredients || recipe.ingredients?.length || 0}
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${this.getProgressBarColor(matchPercentage)}`}
+                  style={{ width: `${matchPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* MISSING INGREDIENTS */}
+            {missingIngredients.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold text-amber-700 mb-1">
+                  Missing ingredients
+                </p>
+                {this.renderMissingIngredients()}
+              </div>
             )}
+
+            {/* ACTIONS */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button 
+                onClick={() => onViewRecipe(recipe)}
+                className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-600 transition-colors"
+              >
+                View recipe
+              </button>
+
+              {missingIngredients && missingIngredients.length > 0 && (
+                <button 
+                  onClick={this.handleAddMissingToCart}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 transition-colors"
+                  title="Add Missing Ingredients to Shopping List"
+                >
+                  Add missing ingredients
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       </>
     );
   }

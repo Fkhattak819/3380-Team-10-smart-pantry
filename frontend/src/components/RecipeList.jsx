@@ -326,13 +326,13 @@ class RecipeList extends Component {
   };
 
   getFilterClass(filter) {
-    const baseClass = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors";
+    const baseClass = "px-4 py-2 rounded-full text-sm font-medium transition-all";
     const isActive = this.state.activeFilter === filter;
     
     if (isActive) {
-      return `${baseClass} bg-gray-800 text-white`;
+      return `${baseClass} bg-slate-900 text-white shadow-sm`;
     }
-    return `${baseClass} text-gray-600 hover:text-gray-800 hover:bg-gray-100`;
+    return `${baseClass} text-slate-600 hover:text-slate-900 hover:bg-slate-100`;
   }
 
   render() {
@@ -341,10 +341,10 @@ class RecipeList extends Component {
 
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-16">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading recipes...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mx-auto"></div>
+            <p className="mt-4 text-slate-600 text-sm">Loading recipes...</p>
           </div>
         </div>
       );
@@ -352,28 +352,32 @@ class RecipeList extends Component {
 
     return (
       <>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Recipe Suggestions</h2>
-          <p className="text-gray-600 mb-6">Based on your pantry and preferences</p>
+        <div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-slate-900">Recipe Suggestions</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Based on your pantry and preferences
+            </p>
+          </div>
           
-          <div className="flex space-x-2 mb-6">
+          <div className="flex flex-wrap gap-2 mb-6">
             <button
               onClick={() => this.handleFilterChange('all')}
               className={this.getFilterClass('all')}
             >
-              <span>All Recipes ({filterCounts.all})</span>
+              All Recipes ({filterCounts.all})
             </button>
             <button
               onClick={() => this.handleFilterChange('ready')}
               className={this.getFilterClass('ready')}
             >
-              <span>Ready to Cook ({filterCounts.ready})</span>
+              Ready to Cook ({filterCounts.ready})
             </button>
             <button
               onClick={() => this.handleFilterChange('almostReady')}
               className={this.getFilterClass('almostReady')}
             >
-              <span>Almost Ready ({filterCounts.almostReady})</span>
+              Almost Ready ({filterCounts.almostReady})
             </button>
           </div>
 
@@ -383,21 +387,20 @@ class RecipeList extends Component {
               placeholder="Search recipes..."
               value={searchQuery}
               onChange={this.handleSearchChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredRecipes.length === 0 ? (
-              <div className="col-span-2 text-center py-8">
-                <p className="text-gray-500">No recipes found</p>
+              <div className="col-span-1 md:col-span-2 text-center py-12">
+                <p className="text-slate-500 text-sm">No recipes found. Try adjusting your filters.</p>
               </div>
             ) : (
               filteredRecipes.map(recipe => {
                 const rawMatch = Number(recipe.matchPercentage) || 0;
                 const matchPercentage = Math.round(rawMatch);
 
-                // Create matchInfo from recipe data
                 const matchInfo = {
                   matchPercentage,
                   totalIngredients: recipe.totalIngredients || 0,
@@ -428,7 +431,7 @@ class RecipeList extends Component {
           recipe={selectedRecipe}
           onClose={this.handleCloseModal}
         />
-      </> 
+      </>
     );
   }
 }
