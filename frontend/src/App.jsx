@@ -1,12 +1,12 @@
 import React, { Component } from 'react'
-import LoginForm from './login/LoginForm'
+import LoginForm from './components/LoginForm'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import RecipeList from './components/RecipeList'
 import InventoryList from './components/InventoryList'
 import SettingsPanel from './components/SettingsPanel'
-import CartModal from './components/CartModal' // Import the cart modal
-import { authService } from './login/authService'
+import CartModal from './components/CartModal'
+import { authService } from './services/authService'
 
 // Main App component
 class App extends Component {

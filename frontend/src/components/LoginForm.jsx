@@ -1,6 +1,6 @@
 import { useState } from "react"
 import "./auth.css";
-import { authService } from "./authService";
+import { authService } from "../services/authService";
 
 const LoginForm = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState("login") // 'login' or 'signup'

@@ -134,3 +134,23 @@ export async function saveUserPreferences(userId, diets) {
   });
   return handleResponse(response);
 }
+
+// --- AUTH API FUNCTIONS ---
+
+export async function login(username, password) {
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ username, password })
+  });
+  return handleResponse(response);
+}
+
+export async function signup(username, password) {
+  const response = await fetch(`${BASE_URL}/auth/signup`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ username, password })
+  });
+  return handleResponse(response);
+}
