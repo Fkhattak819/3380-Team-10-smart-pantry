@@ -14,9 +14,11 @@ const LoginForm = ({ onLoginSuccess }) => {
     setLoading(true)
 
     try {
-      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/signup"
+      // Use the same BASE_URL pattern as the rest of the API
+      const BASE_URL = import.meta.env.VITE_API_URL || 'https://epistemic-postnasal-reid.ngrok-free.dev/api';
+      const endpoint = mode === "login" ? `${BASE_URL}/auth/login` : `${BASE_URL}/auth/signup`
 
-      const response = await fetch(`http://localhost:5001${endpoint}`, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

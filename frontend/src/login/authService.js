@@ -1,4 +1,6 @@
-const API_URL = "http://localhost:5001/api/auth"
+// Use the same BASE_URL pattern as the rest of the API
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://epistemic-postnasal-reid.ngrok-free.dev/api';
+const API_URL = `${BASE_URL}/auth`
 
 export const authService = {
   login: async (username, password) => {
