@@ -9,13 +9,14 @@ export default defineConfig({
     port: 3000,
     host: true,
     open: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5001',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
+    // proxy: {
+    //   '/api': {
+    //     target: 'https://epistemic-postnasal-reid.ngrok-free.dev',
+    //     changeOrigin: true,
+    //     secure: false,
+    //     rewrite: path => path.replace(/^\/api/, ''),
+    //   }
+    // }
   },
   resolve: {
     alias: {
