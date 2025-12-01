@@ -1,14 +1,3 @@
-// // Centralized API helper so the frontend talks to the Flask backend consistently.
-// // `VITE_API_BASE` lets you point to a remote backend in production; during dev we proxy `/api`.
-// // export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
-// export const API_BASE = 'https://epistemic-postnasal-reid.ngrok-free.dev';
-
-// export async function apiFetch(path, options) {
-//   const response = await fetch(`${API_BASE}${path}`, options);
-//   return response;
-// }
-
-// ...existing code...
 // Centralized API helper so the frontend talks to the remote backend (ngrok).
 // It prefers VITE_API_URL if set, otherwise uses the provided ngrok host.
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://epistemic-postnasal-reid.ngrok-free.dev/api';
@@ -98,37 +87,11 @@ export async function getRecipeDetails(recipeId) {
   return handleResponse(response);
 }
 
-
-export async function getShoppingList(userId) {
-  const response = await fetch(`${BASE_URL}/shopping-list?userId=${encodeURIComponent(userId)}`, {
-    method: 'GET',
-    headers: getHeaders()
-  });
-  return handleResponse(response);
-}
-
-export async function addToShoppingList(userId, ingredientName, quantity = 1) {
-  const response = await fetch(`${BASE_URL}/shopping-list`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ userId, ingredientName, quantity })
-  });
-  return handleResponse(response);
-}
-
 export async function addMissingToShoppingList(userId, recipeId) {
   const response = await fetch(`${BASE_URL}/shopping-list/add-from-recipe`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ userId, recipeId })
-  });
-  return handleResponse(response);
-}
-
-export async function removeFromShoppingList(userId, itemId) {
-  const response = await fetch(`${BASE_URL}/shopping-list?userId=${encodeURIComponent(userId)}&itemId=${encodeURIComponent(itemId)}`, {
-    method: 'DELETE',
-    headers: getHeaders()
   });
   return handleResponse(response);
 }

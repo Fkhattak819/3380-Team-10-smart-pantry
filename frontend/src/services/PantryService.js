@@ -65,44 +65,6 @@ export class PantryService {
     );
   }
 
-  getItemsByStatus(status) {
-    return this.items.filter(item => item.getStatus() === status);
-  }
-
-  // Statistics methods
-  getStatistics() {
-    const total = this.totalItems;
-
-    return {
-      total
-    };
-  }
-
-  // Data persistence methods
-  exportToJSON() {
-    return JSON.stringify(this.items.map(item => item.toJSON()), null, 2);
-  }
-
-  importFromJSON(jsonString) {
-    try {
-      const data = JSON.parse(jsonString);
-      this._items.clear();
-      this._nextId = 1;
-
-      data.forEach(itemData => {
-        const item = new PantryItem(
-          this._nextId++,
-          itemData.name,
-          itemData.quantity,
-          itemData.unit || ''
-        );
-        this._items.set(item.id, item);
-      });
-    } catch (error) {
-      throw new Error('Invalid JSON format');
-    }
-  }
-
   // Utility methods
   clearAll() {
     this._items.clear();
