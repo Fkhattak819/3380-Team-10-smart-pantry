@@ -61,11 +61,15 @@ export async function getPantry(userId) {
   return handleResponse(response);
 }
 
-export async function addToPantry(userId, ingredientName, quantity) {
+export async function addToPantry(userId, ingredientName, quantity, unit = null) {
+  const payload = { userId, ingredientName, quantity };
+  if (unit) {
+    payload.unit = unit;
+  }
   const response = await fetch(`${BASE_URL}/pantry/add`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ userId, ingredientName, quantity }),
+    body: JSON.stringify(payload),
   });
   return handleResponse(response);
 }

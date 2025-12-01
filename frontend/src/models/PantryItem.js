@@ -3,11 +3,11 @@
  * Follows object-oriented design principles
  */
 export class PantryItem {
-  constructor(id, name, expiryDate, quantity = 1) {
+  constructor(id, name, quantity = 1, unit = '') {
     this._id = id;
     this._name = name;
-    this._expiryDate = new Date(expiryDate);
     this._quantity = quantity;
+    this._unit = unit;
     this._dateAdded = new Date();
   }
 
@@ -20,12 +20,12 @@ export class PantryItem {
     return this._name;
   }
 
-  get expiryDate() {
-    return this._expiryDate;
-  }
-
   get quantity() {
     return this._quantity;
+  }
+
+  get unit() {
+    return this._unit;
   }
 
   get dateAdded() {
@@ -49,58 +49,18 @@ export class PantryItem {
     }
   }
 
-  set expiryDate(newDate) {
-    const date = new Date(newDate);
-    if (date instanceof Date && !isNaN(date)) {
-      this._expiryDate = date;
-    } else {
-      throw new Error('Expiry date must be a valid date');
-    }
-  }
-
-  // Business logic methods
-  isExpired() {
-    return this._expiryDate < new Date();
-  }
-
-  isExpiringSoon(days = 3) {
-    const today = new Date();
-    const expiryDate = new Date(this._expiryDate);
-    const diffTime = expiryDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= days && diffDays >= 0;
-  }
-
-  getDaysUntilExpiry() {
-    const today = new Date();
-    const expiryDate = new Date(this._expiryDate);
-    const diffTime = expiryDate - today;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  }
-
-  getStatus() {
-    if (this.isExpired()) {
-      return 'expired';
-    } else if (this.isExpiringSoon()) {
-      return 'expiring-soon';
-    } else {
-      return 'fresh';
-    }
-  }
-
   // Utility methods
   toJSON() {
     return {
       id: this._id,
       name: this._name,
-      expiryDate: this._expiryDate.toISOString().split('T')[0],
       quantity: this._quantity,
-      dateAdded: this._dateAdded.toISOString(),
-      status: this.getStatus()
+      unit: this._unit,
+      dateAdded: this._dateAdded.toISOString()
     };
   }
 
   toString() {
-    return `${this._name} (${this._quantity}) - Expires: ${this._expiryDate.toLocaleDateString()}`;
+    return `${this._name} (${this._quantity} ${this._unit})`;
   }
 }

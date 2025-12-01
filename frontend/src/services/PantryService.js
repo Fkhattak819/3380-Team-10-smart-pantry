@@ -19,25 +19,13 @@ export class PantryService {
     return this._items.size;
   }
 
-  get expiredItems() {
-    return this.items.filter(item => item.isExpired());
-  }
-
-  get expiringSoonItems() {
-    return this.items.filter(item => item.isExpiringSoon());
-  }
-
-  get freshItems() {
-    return this.items.filter(item => item.getStatus() === 'fresh');
-  }
-
   // Core business methods
-  addItem(name, expiryDate, quantity = 1) {
-    if (!name || !expiryDate) {
-      throw new Error('Name and expiry date are required');
+  addItem(name, quantity = 1, unit = '') {
+    if (!name) {
+      throw new Error('Name is required');
     }
 
-    const item = new PantryItem(this._nextId++, name, expiryDate, quantity);
+    const item = new PantryItem(this._nextId++, name, quantity, unit);
     this._items.set(item.id, item);
     return item;
   }
@@ -61,9 +49,6 @@ export class PantryService {
     if (updates.quantity !== undefined) {
       item.quantity = updates.quantity;
     }
-    if (updates.expiryDate !== undefined) {
-      item.expiryDate = updates.expiryDate;
-    }
 
     return item;
   }
@@ -84,30 +69,12 @@ export class PantryService {
     return this.items.filter(item => item.getStatus() === status);
   }
 
-  getItemsExpiringInDays(days) {
-    return this.items.filter(item => {
-      const daysUntilExpiry = item.getDaysUntilExpiry();
-      return daysUntilExpiry <= days && daysUntilExpiry >= 0;
-    });
-  }
-
   // Statistics methods
   getStatistics() {
     const total = this.totalItems;
-    const expired = this.expiredItems.length;
-    const expiringSoon = this.expiringSoonItems.length;
-    const fresh = this.freshItems.length;
 
     return {
-      total,
-      expired,
-      expiringSoon,
-      fresh,
-      percentages: {
-        expired: total > 0 ? Math.round((expired / total) * 100) : 0,
-        expiringSoon: total > 0 ? Math.round((expiringSoon / total) * 100) : 0,
-        fresh: total > 0 ? Math.round((fresh / total) * 100) : 0
-      }
+      total
     };
   }
 
@@ -126,8 +93,8 @@ export class PantryService {
         const item = new PantryItem(
           this._nextId++,
           itemData.name,
-          itemData.expiryDate,
-          itemData.quantity
+          itemData.quantity,
+          itemData.unit || ''
         );
         this._items.set(item.id, item);
       });

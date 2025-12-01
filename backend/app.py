@@ -217,6 +217,7 @@ def add_to_pantry():
     user_id = data.get('userId')
     ingredient_name = data.get('ingredientName')
     quantity = data.get('quantity')
+    unit = data.get('unit')  # Optional unit parameter
 
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database fail"}), 500
@@ -227,13 +228,14 @@ def add_to_pantry():
         if not ing_row: return jsonify({"error": "Ingredient not found"}), 404
         
         ing_id = ing_row.IngredientID
-        default_unit = ing_row.DefaultUnit
+        # Use provided unit or default to ingredient's default unit
+        final_unit = unit if unit else ing_row.DefaultUnit
 
         cursor.execute("SELECT PantryID FROM Pantry WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
         if cursor.fetchone():
             cursor.execute("UPDATE Pantry SET Quantity = Quantity + ? WHERE UserID = ? AND IngredientID = ?", (quantity, user_id, ing_id))
         else:
-            cursor.execute("INSERT INTO Pantry (UserID, IngredientID, Quantity, Unit) VALUES (?, ?, ?, ?)", (user_id, ing_id, quantity, default_unit))
+            cursor.execute("INSERT INTO Pantry (UserID, IngredientID, Quantity, Unit) VALUES (?, ?, ?, ?)", (user_id, ing_id, quantity, final_unit))
         conn.commit()
         return jsonify({"success": True})
     finally:

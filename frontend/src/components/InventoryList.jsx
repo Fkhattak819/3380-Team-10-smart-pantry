@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { PantryService } from '../services/PantryService.js';
-import { getPantry, addToPantry, removeFromPantry } from '../services/api.js';
+import { getPantry, addToPantry, removeFromPantry, searchIngredients } from '../services/api.js';
 
 // Inventory list component
 class InventoryList extends Component {
@@ -10,11 +10,13 @@ class InventoryList extends Component {
     
     this.state = {
       items: [],
-      newItem: { name: '', expiryDate: '', quantity: 1 },
+      newItem: { name: '', quantity: 1, unit: '' },
       searchQuery: '',
-      filterStatus: 'all',
       isLoading: true,
-      error: null
+      error: null,
+      ingredientSuggestions: [],
+      showSuggestions: false,
+      selectedIngredient: null
     };
   }
 
@@ -37,20 +39,11 @@ class InventoryList extends Component {
       if (Array.isArray(pantryData)) {
         pantryData.forEach(item => {
           try {
-            // Use ExpiryDate from API if available, otherwise use default (7 days from now)
-            const expiryDate =
-              item.ExpiryDate ||
-              item.expiryDate ||
-              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                .toISOString()
-                .split('T')[0];
-
-            // Convert to Date object for PantryItem
-            const expiryDateObj = new Date(expiryDate);
+            // Add item with unit
             this.pantryService.addItem(
               item.Name,
-              expiryDateObj,
-              item.Quantity || item.qty || 1
+              item.Quantity || item.qty || 1,
+              item.Unit || ''
             );
           } catch (itemError) {
             console.error('Error processing item:', item, itemError);
@@ -78,15 +71,52 @@ class InventoryList extends Component {
     this.setState({ items: this.pantryService.items });
   }
 
-  handleInputChange = (field, value) => {
-    this.setState(prevState => ({
-      newItem: { ...prevState.newItem, [field]: value }
-    }));
+  handleInputChange = async (field, value) => {
+    if (field === 'name') {
+      // Search for ingredients as user types
+      this.setState(prevState => ({
+        newItem: { ...prevState.newItem, [field]: value },
+        selectedIngredient: null,
+        unit: ''
+      }));
+      
+      if (value && value.length >= 2) {
+        try {
+          const suggestions = await searchIngredients(value);
+          this.setState({
+            ingredientSuggestions: suggestions || [],
+            showSuggestions: true
+          });
+        } catch (error) {
+          console.error('Error searching ingredients:', error);
+          this.setState({ ingredientSuggestions: [], showSuggestions: false });
+        }
+      } else {
+        this.setState({ ingredientSuggestions: [], showSuggestions: false });
+      }
+    } else {
+      this.setState(prevState => ({
+        newItem: { ...prevState.newItem, [field]: value }
+      }));
+    }
+  };
+
+  handleSelectIngredient = (ingredient) => {
+    this.setState({
+      newItem: {
+        ...this.state.newItem,
+        name: ingredient.Name,
+        unit: ingredient.DefaultUnit || ''
+      },
+      selectedIngredient: ingredient,
+      showSuggestions: false,
+      ingredientSuggestions: []
+    });
   };
 
   handleAddItem = async (e) => {
     e.preventDefault();
-    const { name, expiryDate, quantity } = this.state.newItem;
+    const { name, quantity, unit } = this.state.newItem;
     const userId = 1; // Default user ID - make dynamic later
     
     // Validate input
@@ -95,31 +125,34 @@ class InventoryList extends Component {
       return;
     }
     
-    if (!expiryDate) {
-      alert('Please select an expiry date');
+    // Validate that ingredient exists (must be selected from suggestions)
+    if (!this.state.selectedIngredient) {
+      alert('Please select an ingredient from the suggestions list');
       return;
     }
     
     try {
-      // Normalize ingredient name (lowercase, replace spaces with underscores)
-      const ingredientName = name.toLowerCase().trim().replace(/\s+/g, '_');
+      // Use the exact ingredient name from database (case-sensitive)
+      const ingredientName = this.state.selectedIngredient.Name;
       
       console.log('Adding to pantry via API:', {
         userId,
         ingredientName,
         quantity: parseFloat(quantity) || 1,
-        expiryDate
+        unit: unit || this.state.selectedIngredient.DefaultUnit
       });
 
-      // Call Flask API to add item
-      await addToPantry(userId, ingredientName, parseFloat(quantity) || 1);
-      // If your backend supports expiryDate, you can extend addToPantry in api.js to include it
+      // Call Flask API to add item with unit
+      await addToPantry(userId, ingredientName, parseFloat(quantity) || 1, unit || this.state.selectedIngredient.DefaultUnit);
       
       // Reload pantry data from API
       await this.loadPantryData();
       
       this.setState({
-        newItem: { name: '', expiryDate: '', quantity: 1 }
+        newItem: { name: '', quantity: 1, unit: '' },
+        selectedIngredient: null,
+        showSuggestions: false,
+        ingredientSuggestions: []
       });
     } catch (error) {
       console.error('Error adding item:', error);
@@ -148,10 +181,6 @@ class InventoryList extends Component {
     this.setState({ searchQuery: query });
   };
 
-  handleFilterChange = (status) => {
-    this.setState({ filterStatus: status });
-  };
-
   getFilteredItems() {
     let items = this.state.items;
 
@@ -159,57 +188,12 @@ class InventoryList extends Component {
       items = this.pantryService.searchItems(this.state.searchQuery);
     }
 
-    if (this.state.filterStatus !== 'all') {
-      items = items.filter(item => item.getStatus() === this.state.filterStatus);
-    }
-
     return items;
   }
 
-  getItemStatusClass(item) {
-    const status = item.getStatus();
-    switch (status) {
-      case 'expired':
-        return 'border-red-300 bg-red-50';
-      case 'expiring-soon':
-        return 'border-green-300 bg-green-50';
-      case 'fresh':
-        return 'border-green-300 bg-green-50';
-      default:
-        return 'border-gray-300 bg-white';
-    }
-  }
-
-  getItemStatusText(item) {
-    const status = item.getStatus();
-    switch (status) {
-      case 'expired':
-        return 'Expired';
-      case 'expiring-soon':
-        return 'Expiring Soon';
-      case 'fresh':
-        return 'Fresh';
-      default:
-        return 'Unknown';
-    }
-  }
-
-  getFilterCounts() {
-    const all = this.state.items.length;
-    const expired = this.state.items.filter(item => item.getStatus() === 'expired').length;
-    const expiringSoon = this.state.items.filter(item => item.getStatus() === 'expiring-soon').length;
-    const fresh = this.state.items.filter(item => item.getStatus() === 'fresh').length;
-    return { all, expired, expiringSoon, fresh };
-  }
-
-  getFilterClass(status) {
-    const baseClass = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors";
-    const isActive = this.state.filterStatus === status;
-    
-    if (isActive) {
-      return `${baseClass} bg-gray-800 text-white`;
-    }
-    return `${baseClass} text-gray-600 hover:text-gray-800 hover:bg-gray-100`;
+  formatDisplayName(name) {
+    // Replace underscores with spaces for display
+    return name.replace(/_/g, ' ');
   }  
 
   render() {
@@ -244,7 +228,6 @@ class InventoryList extends Component {
     }
 
     const filteredItems = this.getFilteredItems();
-    const filterCounts = this.getFilterCounts();
 
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -259,40 +242,47 @@ class InventoryList extends Component {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"          
           />
         </div>
-        
-        <div className="flex flex-wrap gap-2 mb-6">
-          <button
-            onClick={() => this.handleFilterChange('all')}
-            className={this.getFilterClass('all')}
-          >
-            <span>All ({filterCounts.all})</span>
-          </button>
-          <button
-            onClick={() => this.handleFilterChange('expiring-soon')}
-            className={this.getFilterClass('expiring-soon')}
-          >
-            <span>Expiring Soon ({filterCounts.expiringSoon})</span>
-          </button>
-        </div>
 
         <form onSubmit={this.handleAddItem} className="mb-6">
           <h3 className="text-lg font-medium mb-3">Add New Item</h3>
           <div className="flex gap-3 items-end">
-            <input
-              type="text"
-              placeholder="Item name"
-              value={this.state.newItem.name}
-              onChange={(e) => this.handleInputChange('name', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <input
-              type="date"
-              value={this.state.newItem.expiryDate}
-              onChange={(e) => this.handleInputChange('expiryDate', e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Item name (type to search)"
+                value={this.state.newItem.name}
+                onChange={(e) => this.handleInputChange('name', e.target.value)}
+                onBlur={() => setTimeout(() => this.setState({ showSuggestions: false }), 200)}
+                onFocus={() => {
+                  if (this.state.newItem.name && this.state.ingredientSuggestions.length > 0) {
+                    this.setState({ showSuggestions: true });
+                  }
+                }}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  this.state.selectedIngredient ? 'border-green-500' : 'border-gray-300'
+                }`}
+                required
+              />
+              {this.state.showSuggestions && this.state.ingredientSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {this.state.ingredientSuggestions.map((ingredient, index) => (
+                    <div
+                      key={index}
+                      onClick={() => this.handleSelectIngredient(ingredient)}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0"
+                    >
+                      <div className="font-medium">{ingredient.Name}</div>
+                      <div className="text-sm text-gray-500">Unit: {ingredient.DefaultUnit || 'N/A'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {this.state.newItem.name && !this.state.selectedIngredient && this.state.ingredientSuggestions.length === 0 && this.state.newItem.name.length >= 2 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-red-300 rounded-md shadow-lg p-3">
+                  <p className="text-red-600 text-sm">No matching ingredient found. Please select from suggestions.</p>
+                </div>
+              )}
+            </div>
             <input
               type="number"
               placeholder="Quantity"
@@ -301,13 +291,31 @@ class InventoryList extends Component {
               className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               min="1"
             />
+            <select
+              value={this.state.newItem.unit}
+              onChange={(e) => this.handleInputChange('unit', e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+              disabled={!this.state.selectedIngredient}
+              required
+            >
+              <option value="">Unit</option>
+              {this.state.selectedIngredient && (
+                <option value={this.state.selectedIngredient.DefaultUnit}>
+                  {this.state.selectedIngredient.DefaultUnit}
+                </option>
+              )}
+            </select>
             <button
               type="submit"
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              disabled={!this.state.selectedIngredient}
             >
               Add Item
             </button>
           </div>
+          {!this.state.selectedIngredient && this.state.newItem.name && (
+            <p className="text-sm text-red-500 mt-2">Please select an ingredient from the suggestions above</p>
+          )}
         </form>
 
         <div className="space-y-3">
@@ -317,18 +325,12 @@ class InventoryList extends Component {
             filteredItems.map(item => (
               <div 
                 key={item.id} 
-                className={`flex items-center justify-between p-4 border border-gray-300 rounded-lg ${this.getItemStatusClass(item)}`} 
+                className="flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-white"
               >
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-gray-800">{item.name}</h4>
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700">
-                      {this.getItemStatusText(item)}
-                    </span>
-                  </div>               
+                  <h4 className="font-medium text-gray-800 mb-1">{this.formatDisplayName(item.name)}</h4>
                   <p className="text-sm text-gray-600">
-                    Expires: {item.expiryDate.toLocaleDateString()} | 
-                    Quantity: {item.quantity}
+                    Quantity: {item.quantity} {item.unit || ''}
                   </p>
                 </div>
                 <button
