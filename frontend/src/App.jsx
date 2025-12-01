@@ -17,6 +17,14 @@ class App extends Component {
       // Cart State
       cart: [], 
       isCartOpen: false,
+      // Filter State
+      recipeFilters: {
+        maxPrepTime: 30,
+        selectedDiet: '',
+        minCalories: null,
+        maxCalories: null,
+        selectedAllergens: []
+      }
     };
   }
 
@@ -65,13 +73,19 @@ class App extends Component {
   };
   
   handleAddToCart = (ingredientName) => {
+    // Normalize ingredient name for comparison (lowercase, trim)
+    const normalizedName = String(ingredientName).toLowerCase().trim();
+    
     // FIX: Check if the ingredient already exists before adding it
     this.setState(prevState => {
-      if (prevState.cart.includes(ingredientName)) {
+      const normalizedCart = prevState.cart.map(item => String(item).toLowerCase().trim());
+      if (normalizedCart.includes(normalizedName)) {
+        console.log('Ingredient already in cart:', ingredientName);
         return null; // Return null to prevent the state update
       }
       
       // If unique, add it to the cart
+      console.log('Adding to cart:', ingredientName);
       return {
         cart: [...prevState.cart, ingredientName]
       };
@@ -94,15 +108,19 @@ class App extends Component {
     this.setState({ cart: [] });
   };
 
+  handleFilterChange = (filters) => {
+    this.setState({ recipeFilters: filters });
+  };
+
   renderContent() {
     // Pass the handler down to RecipeList
     switch (this.state.activeTab) {
       case 'recipes':
-        return <RecipeList onAddToCart={this.handleAddToCart} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} filters={this.state.recipeFilters} />;
       case 'pantry':
         return <InventoryList />;
       default:
-        return <RecipeList onAddToCart={this.handleAddToCart} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} filters={this.state.recipeFilters} />;
     }
   }
 
@@ -128,7 +146,8 @@ class App extends Component {
         
         <SettingsPanel 
           isOpen={isSettingsOpen} 
-          onClose={this.toggleSettings} 
+          onClose={this.toggleSettings}
+          onFilterChange={this.handleFilterChange}
         />
         
         {/* Render the Cart Modal */}

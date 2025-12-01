@@ -545,44 +545,42 @@ def add_missing_ingredients():
     try:
         cursor = conn.cursor()
         
-        # Calculate difference between Recipe Needs and Pantry Haves
+        # Find ingredients in recipe that are NOT in user's pantry
         query = """
-            SELECT 
-                ri.IngredientID, 
-                ri.Unit,
-                (ri.Quantity - ISNULL(p.Quantity, 0)) AS MissingQty
+            SELECT DISTINCT ri.IngredientID, i.Name
             FROM RecipeIngredients ri
+            JOIN Ingredients i ON ri.IngredientID = i.IngredientID
             LEFT JOIN Pantry p ON ri.IngredientID = p.IngredientID AND p.UserID = ?
-            WHERE ri.RecipeID = ?
+            WHERE ri.RecipeID = ? AND p.IngredientID IS NULL
         """
         cursor.execute(query, (user_id, recipe_id))
         rows = cursor.fetchall()
         
+        added_ingredients = []
         count = 0
         for row in rows:
             ing_id = row.IngredientID
-            unit = row.Unit
-            missing_qty = row.MissingQty
+            ing_name = row.Name
             
-            if missing_qty > 0:
-                cursor.execute("SELECT ShoppingListItemID FROM ShoppingList WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
-                existing = cursor.fetchone()
-                
-                if existing:
-                     cursor.execute("""
-                        UPDATE ShoppingList 
-                        SET Quantity = CASE WHEN Quantity < ? THEN ? ELSE Quantity END
-                        WHERE ShoppingListItemID = ?
-                     """, (missing_qty, missing_qty, existing[0]))
-                else:
-                    cursor.execute("""
-                        INSERT INTO ShoppingList (UserID, IngredientID, Quantity, Unit, IsPurchased)
-                        VALUES (?, ?, ?, ?, 0)
-                    """, (user_id, ing_id, missing_qty, unit))
+            # Check if item already exists in shopping list
+            cursor.execute("SELECT ShoppingListItemID FROM ShoppingList WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
+            existing = cursor.fetchone()
+            
+            if not existing:
+                # Only add if it doesn't already exist (avoid duplicates)
+                cursor.execute("""
+                    INSERT INTO ShoppingList (UserID, IngredientID, IsPurchased)
+                    VALUES (?, ?, 0)
+                """, (user_id, ing_id))
+                added_ingredients.append(ing_name)
                 count += 1
         
         conn.commit()
-        return jsonify({"message": f"Added {count} items", "addedCount": count})
+        return jsonify({
+            "message": f"Added {count} items", 
+            "addedCount": count,
+            "ingredients": added_ingredients
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

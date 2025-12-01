@@ -25,7 +25,10 @@ class SettingsPanel extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      maxPrepTime: 30, 
+      maxPrepTime: 30,
+      selectedDiet: '',
+      minCalories: '',
+      maxCalories: '',
       isAllergensOpen: false,
       selectedAllergens: allergenOptions.reduce((acc, allergen) => {
         acc[allergen] = false;
@@ -36,10 +39,10 @@ class SettingsPanel extends Component {
 
   handlePrepTimeChange = (e) => {
     const value = parseInt(e.target.value);
-    // Constrain input to be between 5 and 60 minutes and ensure it's a multiple of 5 if possible
+    // Constrain input to be between 5 and 120 minutes and ensure it's a multiple of 5 if possible
     let newTime = value;
     if (newTime < 5) newTime = 5;
-    if (newTime > 60) newTime = 60;
+    if (newTime > 120) newTime = 120;
     
     this.setState({ maxPrepTime: newTime });
   };
@@ -57,9 +60,36 @@ class SettingsPanel extends Component {
     }));
   };
 
+  handleDietChange = (e) => {
+    this.setState({ selectedDiet: e.target.value });
+  };
+
+  handleMinCaloriesChange = (e) => {
+    this.setState({ minCalories: e.target.value });
+  };
+
+  handleMaxCaloriesChange = (e) => {
+    this.setState({ maxCalories: e.target.value });
+  };
+
+  handleFilterClick = () => {
+    const { onFilterChange } = this.props;
+    if (onFilterChange) {
+      onFilterChange({
+        maxPrepTime: this.state.maxPrepTime,
+        selectedDiet: this.state.selectedDiet,
+        minCalories: this.state.minCalories ? parseInt(this.state.minCalories) : null,
+        maxCalories: this.state.maxCalories ? parseInt(this.state.maxCalories) : null,
+        selectedAllergens: Object.keys(this.state.selectedAllergens).filter(
+          allergen => this.state.selectedAllergens[allergen]
+        )
+      });
+    }
+  };
+
   render() {
     const { isOpen, onClose } = this.props;
-    const { maxPrepTime, isAllergensOpen, selectedAllergens } = this.state;
+    const { maxPrepTime, selectedDiet, minCalories, maxCalories, isAllergensOpen, selectedAllergens } = this.state;
 
     const panelClass = `fixed top-0 right-0 w-80 h-full bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out 
       ${isOpen ? 'translate-x-0' : 'translate-x-full'}`;
@@ -115,6 +145,8 @@ class SettingsPanel extends Component {
                 Filter Food Type
               </label>
               <select 
+                value={selectedDiet}
+                onChange={this.handleDietChange}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
               >
                 <option value="">-- Select Diet --</option>
@@ -138,6 +170,8 @@ class SettingsPanel extends Component {
                     <input 
                       type="number"
                       placeholder="300"
+                      value={minCalories}
+                      onChange={this.handleMinCaloriesChange}
                       className="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 text-gray-800"
                     />
                   </label>
@@ -146,6 +180,8 @@ class SettingsPanel extends Component {
                     <input 
                       type="number"
                       placeholder="800"
+                      value={maxCalories}
+                      onChange={this.handleMaxCaloriesChange}
                       className="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 text-gray-800"
                     />
                   </label>
@@ -162,7 +198,7 @@ class SettingsPanel extends Component {
                 id="max-prep-time-input"
                 type="number"
                 min="5"
-                max="60"
+                max="120"
                 step="5"
                 placeholder="30"
                 value={maxPrepTime}
@@ -172,7 +208,7 @@ class SettingsPanel extends Component {
               <input 
                 type="range"
                 min="5"
-                max="60"
+                max="120"
                 step="5"
                 value={maxPrepTime}
                 onChange={this.handlePrepTimeChange}
@@ -182,6 +218,7 @@ class SettingsPanel extends Component {
             
             {/* Filter Button (pushes the Logout Button to the bottom) */}
             <button 
+              onClick={this.handleFilterClick}
               className="w-full bg-green-500 text-white font-medium py-2 rounded-lg hover:bg-green-600 transition-colors mb-auto"
             >
               Filter

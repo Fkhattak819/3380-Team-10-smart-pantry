@@ -33,10 +33,10 @@ export default function CartModal({ isOpen, cart = [], onClose, onClearCart, onR
                   <button
                     type="button"
                     onClick={() => onRemoveItem(item)} // Pass the ingredient name string for removal
-                    className="text-sm text-red-500 hover:text-red-700 ml-4"
+                    className="text-gray-500 text-base hover:text-gray-700"
                     aria-label={`Remove ${formatName(item)}`}
                   >
-                    Remove
+                    ×
                   </button>
                 </li>
               ))}
