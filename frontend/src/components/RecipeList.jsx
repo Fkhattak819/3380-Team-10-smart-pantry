@@ -120,15 +120,6 @@ class RecipeList extends Component {
     }
   }
 
-  updateRecipeList() {
-    // Recipes are now loaded directly from API, so this method may not be needed
-    // But keeping it for compatibility
-    const recipes = this.state.recipes || [];
-    this.setState({
-      filteredRecipes: recipes,
-      isLoading: false
-    });
-  }
 
   handleFilterChange = (filter) => {
     let filteredRecipes = [];
