@@ -37,7 +37,7 @@ class InventoryList extends Component {
       
       // Transform API response to match PantryItem format
       if (Array.isArray(pantryData)) {
-        pantryData.forEach(item => {
+      pantryData.forEach(item => {
           try {
             // Add item with unit
             this.pantryService.addItem(
@@ -95,9 +95,9 @@ class InventoryList extends Component {
         this.setState({ ingredientSuggestions: [], showSuggestions: false });
       }
     } else {
-      this.setState(prevState => ({
-        newItem: { ...prevState.newItem, [field]: value }
-      }));
+    this.setState(prevState => ({
+      newItem: { ...prevState.newItem, [field]: value }
+    }));
     }
   };
 
@@ -141,10 +141,10 @@ class InventoryList extends Component {
         quantity: parseFloat(quantity) || 1,
         unit: unit || this.state.selectedIngredient.DefaultUnit
       });
-
+      
       // Call Flask API to add item with unit
       await addToPantry(userId, ingredientName, parseFloat(quantity) || 1, unit || this.state.selectedIngredient.DefaultUnit);
-      
+
       // Reload pantry data from API
       await this.loadPantryData();
       
@@ -247,11 +247,11 @@ class InventoryList extends Component {
           <h3 className="text-lg font-medium mb-3">Add New Item</h3>
           <div className="flex gap-3 items-end">
             <div className="flex-1 relative">
-              <input
-                type="text"
+            <input
+              type="text"
                 placeholder="Item name (type to search)"
-                value={this.state.newItem.name}
-                onChange={(e) => this.handleInputChange('name', e.target.value)}
+              value={this.state.newItem.name}
+              onChange={(e) => this.handleInputChange('name', e.target.value)}
                 onBlur={() => setTimeout(() => this.setState({ showSuggestions: false }), 200)}
                 onFocus={() => {
                   if (this.state.newItem.name && this.state.ingredientSuggestions.length > 0) {
@@ -261,8 +261,8 @@ class InventoryList extends Component {
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   this.state.selectedIngredient ? 'border-green-500' : 'border-gray-300'
                 }`}
-                required
-              />
+              required
+            />
               {this.state.showSuggestions && this.state.ingredientSuggestions.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                   {this.state.ingredientSuggestions.map((ingredient, index) => (

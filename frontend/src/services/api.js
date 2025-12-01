@@ -95,3 +95,28 @@ export async function addMissingToShoppingList(userId, recipeId) {
   });
   return handleResponse(response);
 }
+
+export async function removeFromShoppingList(userId, itemId) {
+  const response = await fetch(`${BASE_URL}/shopping-list?userId=${encodeURIComponent(userId)}&itemId=${encodeURIComponent(itemId)}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getUserPreferences(userId) {
+  const response = await fetch(`${BASE_URL}/users/preferences?userId=${encodeURIComponent(userId)}`, {
+    method: 'GET',
+    headers: getHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function saveUserPreferences(userId, diets) {
+  const response = await fetch(`${BASE_URL}/users/preferences`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ userId, diets })
+  });
+  return handleResponse(response);
+}

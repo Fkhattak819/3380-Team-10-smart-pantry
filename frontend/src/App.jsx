@@ -19,7 +19,7 @@ class App extends Component {
       isCartOpen: false,
       // Filter State
       recipeFilters: {
-        maxPrepTime: 30,
+        maxPrepTime: 60,
         selectedDiet: '',
         minCalories: null,
         maxCalories: null,
