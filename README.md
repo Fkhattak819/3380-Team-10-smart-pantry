@@ -4,7 +4,7 @@ A smart pantry management system created by Team 10.
 
 ## Overview
 
-The Smart Pantry is a food inventory and meal suggestion site that aims to help its users monitor and use their ingredients effectively. It allows users to track their ingredients, optimize food storage, and overall dscover recipes that can be made with what they already have. 
+The Smart Pantry is a food inventory and meal suggestion site that aims to help its users monitor and use their ingredients effectively. It allows users to track their ingredients, optimize food storage, and overall discover recipes that can be made with what they already have. 
 
 The goal of this project is to reduce food waste, encourage healthier eating, and make meal planning easier through a understandable interface.
 
@@ -23,13 +23,76 @@ The goal of this project is to reduce food waste, encourage healthier eating, an
 - User-friendly interface
     - simple design for an amazing user experience
 
-## Getting Started
+## How to Run
 
-Input ingredients  
-Smart Matching  
-Get Recipes  
-Select a Meal  
-Enjoy!  
+1. Install dependencies:
+```bash
+npm install
+cd backend
+pip install -r requirements.txt
+```
+
+2. Set up database:
+   - Create database: `PantryDatabase`
+   - Run `backend/init.sql` to create tables
+   - Run `backend/seed_recipes.sql` to populate recipes
+   - Run `backend/seed_user.sql` to create test user
+
+3. Configure `.env` file (in project root):
+```
+DB_SERVER=localhost\\SQLEXPRESS,1433
+DB_DATABASE=PantryDatabase
+DB_USER=pantry_user
+DB_PASSWORD=your_password
+```
+
+4. In one terminal, start the backend (Flask on port 5001 by default):
+```bash
+source venv/bin/activate  # if using virtual environment
+cd backend
+python app.py
+```
+
+5. In another terminal, start the frontend dev server:
+```bash
+npm run dev
+```
+
+6. Open your browser to the URL shown in the terminal (usually http://localhost:3000). API calls are proxied to the backend on port 5001.
+
+Optional: if your backend runs elsewhere, create `frontend/.env` (or `.env.local`) with:
+```
+VITE_API_BASE=http://your-backend-host:5001/api
+```
+The app will fall back to `/api` when this is not set.
+
+## What It Does
+
+- Track items in your pantry with expiry dates
+- Filter items by status (expiring soon, etc.)
+- Get recipe suggestions based on available ingredients
+- View recipe details with ingredients and instructions
+
+## Project Structure
+
+- `frontend/src/components/` - React components
+- `frontend/src/models/` - Data models (PantryItem, Recipe)
+- `frontend/src/services/` - Business logic
+- `backend/` - Flask API and database scripts
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+
+## Tech Used
+
+- React
+- Vite
+- Tailwind CSS
+- Flask (Python)
+- SQL Server
 
 ## Class Team
 
@@ -39,4 +102,4 @@ Andrew Underwood, Hammaad Alam, Tyler Gates, Fahd Khattak, Madison Nguyen
 ## License
 
 This project is part of a CSC 3380 course assignment for LSU.  
-Currently for educational use, not distrubution.
+Currently for educational use, not distribution.

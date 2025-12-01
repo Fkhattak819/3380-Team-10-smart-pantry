@@ -5,8 +5,12 @@ SECRETS
 ===================================================================
 
 .env
-.env
-.env.
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+.venv
 
 ===================================================================
 
@@ -23,7 +27,7 @@ venv/
 
 Ignore Python cache files
 
-pycache/
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -44,6 +48,7 @@ Ignore the "dist" folder, which is the built, minified app
 
 dist/
 .dist/
+build/
 
 Ignore Vite's cache and temp files
 
@@ -55,6 +60,8 @@ Ignore npm debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 ===================================================================
 
@@ -65,8 +72,30 @@ IDE / EDITOR / OS FILES
 Ignore Visual Studio Code settings
 
 .vscode/
+.idea/
+
+Ignore editor swap files
+
+*.swp
+*.swo
+*~
 
 Ignore Operating System files
 
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+===================================================================
+
+CACHE DIRECTORIES
+
+===================================================================
+
+.npm
+.eslintcache
+.stylelintcache
