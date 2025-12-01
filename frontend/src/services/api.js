@@ -87,6 +87,20 @@ export async function getRecipeDetails(recipeId) {
   return handleResponse(response);
 }
 
+export async function searchRecipes(query, maxTime = null, minCal = null, maxCal = null, diets = '') {
+  const params = new URLSearchParams({ q: query });
+  if (maxTime) params.append('maxTime', maxTime);
+  if (minCal) params.append('minCal', minCal);
+  if (maxCal) params.append('maxCal', maxCal);
+  if (diets) params.append('diets', diets);
+  
+  const response = await fetch(`${BASE_URL}/recipes/search?${params.toString()}`, {
+    method: 'GET',
+    headers: getHeaders()
+  });
+  return handleResponse(response);
+}
+
 export async function addMissingToShoppingList(userId, recipeId) {
   const response = await fetch(`${BASE_URL}/shopping-list/add-from-recipe`, {
     method: 'POST',
