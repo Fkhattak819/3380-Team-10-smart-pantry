@@ -1,34 +1,32 @@
 import React, { Component } from 'react'
+import LoginForm from './login/LoginForm'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import RecipeList from './components/RecipeList'
 import InventoryList from './components/InventoryList'
 import SettingsPanel from './components/SettingsPanel'
 import CartModal from './components/CartModal' // Import the cart modal
+import { authService } from './login/authService'
 
 // Main App component
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      user: authService.getUser(),
+      isLoading: true,
       activeTab: 'recipes',
       isOnline: navigator.onLine,
       isSettingsOpen: false,
       // Cart State
       cart: [], 
       isCartOpen: false,
-      // Filter State
-      recipeFilters: {
-        maxPrepTime: 60,
-        selectedDiet: '',
-        minCalories: null,
-        maxCalories: null,
-        selectedAllergens: []
-      }
     };
   }
 
   componentDidMount() {
+    const user = authService.getUser();
+    this.setState({ user, isLoading: false });
     window.addEventListener('online', this.handleOnlineStatus);
     window.addEventListener('offline', this.handleOnlineStatus);
   }
@@ -47,6 +45,16 @@ class App extends Component {
       document.body.style.overflow = isOpen ? 'hidden' : '';
     }
   }
+
+  handleLoginSuccess = (user) => {
+    authService.setUser(user);
+    this.setState({ user });
+  };
+
+  handleLogout = () => {
+    authService.logout();
+    this.setState({ user: null, isSettingsOpen: false });
+  };
 
   handleOnlineStatus = () => {
     this.setState({ isOnline: navigator.onLine });
@@ -71,26 +79,20 @@ class App extends Component {
   handleCloseCart = () => {
     this.setState({ isCartOpen: false });
   };
-
+  
   handleAddToCart = (ingredientName) => {
-  // Normalize ingredient name for comparison (lowercase, trim)
-  const normalizedName = String(ingredientName).toLowerCase().trim();
-  const normalizedCart = this.state.cart.map(item => String(item).toLowerCase().trim());
-
-  // If it's already there, don't add and return false
-  if (normalizedCart.includes(normalizedName)) {
-    console.log('Ingredient already in cart:', ingredientName);
-    return false;
-  }
-
-  // If unique, add it to the cart and return true
-  console.log('Adding to cart:', ingredientName);
-  this.setState(prevState => ({
-    cart: [...prevState.cart, ingredientName]
-  }));
-
-  return true;
-};
+    // FIX: Check if the ingredient already exists before adding it
+    this.setState(prevState => {
+      if (prevState.cart.includes(ingredientName)) {
+        return null; // Return null to prevent the state update
+      }
+      
+      // If unique, add it to the cart
+      return {
+        cart: [...prevState.cart, ingredientName]
+      };
+    });
+  };
 
   handleRemoveCartItem = (ingredientName) => {
     // Removes the first occurrence of the ingredient name from the cart
@@ -108,24 +110,28 @@ class App extends Component {
     this.setState({ cart: [] });
   };
 
-  handleFilterChange = (filters) => {
-    this.setState({ recipeFilters: filters });
-  };
-
   renderContent() {
     // Pass the handler down to RecipeList
     switch (this.state.activeTab) {
       case 'recipes':
-        return <RecipeList onAddToCart={this.handleAddToCart} filters={this.state.recipeFilters} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} />;
       case 'pantry':
         return <InventoryList />;
       default:
-        return <RecipeList onAddToCart={this.handleAddToCart} filters={this.state.recipeFilters} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} />;
     }
   }
 
   render() {
-    const { activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
+    const { user, isLoading, activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
+
+    if (isLoading) {
+      return <div style={{ textAlign: 'center', padding: '50px' }}>Loading...</div>
+    }
+
+    if (!user) {
+      return <LoginForm onLoginSuccess={this.handleLoginSuccess} />
+    }
 
     return (
       <div className="App min-h-screen bg-gray-100">
@@ -147,7 +153,7 @@ class App extends Component {
         <SettingsPanel 
           isOpen={isSettingsOpen} 
           onClose={this.toggleSettings}
-          onFilterChange={this.handleFilterChange}
+          onLogout={this.handleLogout}
         />
         
         {/* Render the Cart Modal */}

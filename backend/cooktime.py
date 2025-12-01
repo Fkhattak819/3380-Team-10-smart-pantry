@@ -66,7 +66,7 @@ def get_cook_time_ai(title, instructions):
             response = model.generate_content(prompt)
             text = response.text.replace('```json', '').replace('```', '').strip()
             data = json.loads(text)
-            return data.get('minutes', 30)
+            return data.get('minutes', 31) # Return 31 if failed, so we don't get stuck in loop
             
         except exceptions.ResourceExhausted:
             print(f"   [!] Rate limit. Sleeping {wait_time}s...", end="", flush=True)
@@ -75,8 +75,8 @@ def get_cook_time_ai(title, instructions):
             wait_time += 10
         except Exception as e:
             print(f"   [x] AI Error: {e}")
-            return 30 # Default fallback
-    return 30
+            return 31 # Change to 31 so we don't retry it forever
+    return 31
 
 def process_recipes():
     conn = get_db_connection()
@@ -84,13 +84,13 @@ def process_recipes():
 
     cursor = conn.cursor()
 
-    # 1. Find recipes with the default (30) or NULL time
-    # We assume 30 was the default set during import.
-    # You might want to add a specific flag if you want to re-check *everything*.
+    # 1. Find recipes with EXACTLY the default (30) time
+    # This filters out anything you've already updated to 45, 20, 60, etc.
+    print("Scanning for recipes with default 30 min cook time...")
     cursor.execute("""
         SELECT RecipeID, Title 
         FROM Recipes 
-        WHERE TimeMinutes = 30 OR TimeMinutes IS NULL
+        WHERE TimeMinutes = 30
     """)
     recipes = cursor.fetchall()
     
@@ -117,14 +117,13 @@ def process_recipes():
             continue
             
         instr_text = " ".join([s[0] for s in steps])
-        
-        # Truncate if super long to save tokens
         if len(instr_text) > 5000: instr_text = instr_text[:5000] + "..."
         
         print(f"[{i}/{len(recipes)}] Estimating time for: {title}...", end="", flush=True)
         
         minutes = get_cook_time_ai(title, instr_text)
         
+        # Update DB
         cursor.execute("UPDATE Recipes SET TimeMinutes = ? WHERE RecipeID = ?", (minutes, recipe_id))
         conn.commit()
         print(f" Done! ({minutes} mins)")

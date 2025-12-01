@@ -72,64 +72,161 @@ def hello():
 #  USER AUTH & PREFERENCES
 # ---------------------------------------------------------
 
-@app.route('/api/users/login', methods=['POST'])
-def login_user():
+@app.route('/api/auth/signup', methods=['POST'])
+def signup():
+    """Register a new user with username and password"""
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    
+    # Validation
     if not username or not password:
-        return jsonify({"error": "Username and password required"}), 400
-
+        return jsonify({"error": "username and password are required"}), 400
+    
+    if len(username) < 5:
+        return jsonify({"error": "Username must be at least 5 characters"}), 400
+    
+    if len(password) < 5:
+        return jsonify({"error": "Password must be at least 5 characters"}), 400
+    
     conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database fail"}), 500
-
+    if not conn:
+        return jsonify({"error": "cannot connect to database"}), 500
+    
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT UserID, PasswordHash FROM Users WHERE Username = ?", (username,))
-        user = cursor.fetchone()
-
-        if user and check_password_hash(user.PasswordHash, password):
-            return jsonify({
-                "message": "Login successful",
-                "userId": user.UserID,
-                "username": username
-            }), 200
-        else:
-            return jsonify({"error": "Invalid credentials"}), 401
-    finally:
-        conn.close()
-
-@app.route('/api/users/register', methods=['POST'])
-def register_user():
-    data = request.json
-    username = data.get('username')
-    # Email removed as requested
-    password = data.get('password')
-
-    if not all([username, password]):
-        return jsonify({"error": "Username and password are required"}), 400
-
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Database fail"}), 500
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT UserID FROM Users WHERE Username = ?", (username,))
+        
+        # Check if username already exists (case-insensitive)
+        cursor.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(?)", (username,))
         if cursor.fetchone():
-            return jsonify({"error": "Username already exists"}), 409 
-
-        hashed_password = generate_password_hash(password)
-
-        # Insert without Email
-        cursor.execute("INSERT INTO Users (Username, PasswordHash) VALUES (?, ?)", 
-                       (username, hashed_password))
+            return jsonify({"error": "Username already exists"}), 409
+        
+        # Hash password and insert new user
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        cursor.execute(
+            "INSERT INTO Users (Username, PasswordHash) VALUES (?, ?)",
+            (username, hashed_password)
+        )
         conn.commit()
-        return jsonify({"message": "User registered successfully"}), 201
+        
+        # Get the newly created user ID
+        cursor.execute("SELECT UserID FROM Users WHERE LOWER(Username) = LOWER(?)", (username,))
+        user_id = cursor.fetchone()[0]
+        
+        return jsonify({
+            "message": "User registered successfully",
+            "userId": user_id,
+            "username": username
+        }), 201
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Registration failed: {str(e)}"}), 500
     finally:
         conn.close()
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login user with username and password"""
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not password:
+        return jsonify({"error": "username and password are required"}), 400
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "cannot connect to database"}), 500
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Find user by username (case-insensitive)
+        cursor.execute("SELECT UserID, PasswordHash FROM Users WHERE LOWER(Username) = LOWER(?)", (username,))
+        row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({"error": "Invalid username or password"}), 401
+        
+        user_id, password_hash = row[0], row[1]
+        
+        # Verify password
+        if not check_password_hash(password_hash, password):
+            return jsonify({"error": "Invalid username or password"}), 401
+        
+        return jsonify({
+            "message": "Login successful",
+            "userId": user_id,
+            "username": username
+        }), 200
+        
+    except Exception as e:
+        print(f"Login Error: {e}")
+        return jsonify({"error": "Login failed"}), 500
+    finally:
+        conn.close()
+
+# @app.route('/api/users/login', methods=['POST'])
+# def login_user():
+#     data = request.json
+#     username = data.get('username')
+#     password = data.get('password')
+
+#     if not username or not password:
+#         return jsonify({"error": "Username and password required"}), 400
+
+#     conn = get_db_connection()
+#     if not conn: return jsonify({"error": "Database fail"}), 500
+
+#     try:
+#         cursor = conn.cursor()
+#         cursor.execute("SELECT UserID, PasswordHash FROM Users WHERE Username = ?", (username,))
+#         user = cursor.fetchone()
+
+#         if user and check_password_hash(user.PasswordHash, password):
+#             return jsonify({
+#                 "message": "Login successful",
+#                 "userId": user.UserID,
+#                 "username": username
+#             }), 200
+#         else:
+#             return jsonify({"error": "Invalid credentials"}), 401
+#     finally:
+#         conn.close()
+
+# @app.route('/api/users/register', methods=['POST'])
+# def register_user():
+#     data = request.json
+#     username = data.get('username')
+#     # Email removed as requested
+#     password = data.get('password')
+
+#     if not all([username, password]):
+#         return jsonify({"error": "Username and password are required"}), 400
+
+#     conn = get_db_connection()
+#     if not conn: return jsonify({"error": "Database fail"}), 500
+
+#     try:
+#         cursor = conn.cursor()
+#         cursor.execute("SELECT UserID FROM Users WHERE Username = ?", (username,))
+#         if cursor.fetchone():
+#             return jsonify({"error": "Username already exists"}), 409 
+
+#         hashed_password = generate_password_hash(password)
+        
+#         # Insert without Email
+#         cursor.execute("INSERT INTO Users (Username, PasswordHash) VALUES (?, ?)", 
+#                        (username, hashed_password))
+#         conn.commit()
+#         return jsonify({"message": "User registered successfully"}), 201
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         conn.close()
 
 @app.route('/api/users/preferences', methods=['GET', 'POST'])
 def user_preferences():
@@ -157,7 +254,7 @@ def user_preferences():
             
             conn.commit()
             return jsonify({"message": "Preferences updated"})
-
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -186,17 +283,17 @@ def manage_pantry():
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database fail"}), 500
     cursor = conn.cursor()
-    
+
     try:
         if request.method == 'GET':
             user_id = request.args.get('userId')
-        cursor.execute("""
+            cursor.execute("""
                 SELECT p.PantryID, i.Name, p.Quantity, p.Unit
-            FROM Pantry p
-            JOIN Ingredients i ON p.IngredientID = i.IngredientID
+                FROM Pantry p
+                JOIN Ingredients i ON p.IngredientID = i.IngredientID
                 WHERE p.UserID = ? ORDER BY i.Name
-        """, (user_id,))
-        return jsonify(sql_to_dict_list(cursor))
+            """, (user_id,))
+            return jsonify(sql_to_dict_list(cursor))
 
         elif request.method == 'DELETE':
             user_id = request.args.get('userId')
@@ -214,32 +311,30 @@ def manage_pantry():
 @app.route('/api/pantry/add', methods=['POST'])
 def add_to_pantry():
     data = request.json
-        user_id = data.get('userId')
-        ingredient_name = data.get('ingredientName')
-        quantity = data.get('quantity')
-    unit = data.get('unit')  # Optional unit parameter
+    user_id = data.get('userId')
+    ingredient_name = data.get('ingredientName')
+    quantity = data.get('quantity')
 
-        conn = get_db_connection()
+    conn = get_db_connection()
     if not conn: return jsonify({"error": "Database fail"}), 500
-        try:
-            cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
         cursor.execute("SELECT IngredientID, DefaultUnit FROM Ingredients WHERE Name = ?", (ingredient_name,))
-            ing_row = cursor.fetchone()
+        ing_row = cursor.fetchone()
         if not ing_row: return jsonify({"error": "Ingredient not found"}), 404
-            
-            ing_id = ing_row.IngredientID
-        # Use provided unit or default to ingredient's default unit
-        final_unit = unit if unit else ing_row.DefaultUnit
+        
+        ing_id = ing_row.IngredientID
+        default_unit = ing_row.DefaultUnit
 
-            cursor.execute("SELECT PantryID FROM Pantry WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
+        cursor.execute("SELECT PantryID FROM Pantry WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
         if cursor.fetchone():
             cursor.execute("UPDATE Pantry SET Quantity = Quantity + ? WHERE UserID = ? AND IngredientID = ?", (quantity, user_id, ing_id))
-                else:
-            cursor.execute("INSERT INTO Pantry (UserID, IngredientID, Quantity, Unit) VALUES (?, ?, ?, ?)", (user_id, ing_id, quantity, final_unit))
-            conn.commit()
+        else:
+            cursor.execute("INSERT INTO Pantry (UserID, IngredientID, Quantity, Unit) VALUES (?, ?, ?, ?)", (user_id, ing_id, quantity, default_unit))
+        conn.commit()
         return jsonify({"success": True})
-        finally:
-            conn.close()
+    finally:
+        conn.close()
 
 # --- CONSUME RECIPE (MAKE RECIPE) ---
 @app.route('/api/pantry/consume', methods=['POST'])
@@ -251,7 +346,7 @@ def consume_recipe():
     data = request.json
     user_id = data.get('userId')
     recipe_id = data.get('recipeId')
-
+    
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Database fail"}), 500
     try:
@@ -290,9 +385,9 @@ def consume_recipe():
             if cursor.rowcount > 0:
                 updates_made += 1
                 
-            conn.commit()
+        conn.commit()
         return jsonify({"success": True, "message": f"Pantry updated for {updates_made} items."})
-
+        
     except Exception as e:
         print(f"Consume Error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -547,42 +642,44 @@ def add_missing_ingredients():
     try:
         cursor = conn.cursor()
         
-        # Find ingredients in recipe that are NOT in user's pantry
+        # Calculate difference between Recipe Needs and Pantry Haves
         query = """
-            SELECT DISTINCT ri.IngredientID, i.Name
+            SELECT 
+                ri.IngredientID, 
+                ri.Unit,
+                (ri.Quantity - ISNULL(p.Quantity, 0)) AS MissingQty
             FROM RecipeIngredients ri
-            JOIN Ingredients i ON ri.IngredientID = i.IngredientID
             LEFT JOIN Pantry p ON ri.IngredientID = p.IngredientID AND p.UserID = ?
-            WHERE ri.RecipeID = ? AND p.IngredientID IS NULL
+            WHERE ri.RecipeID = ?
         """
         cursor.execute(query, (user_id, recipe_id))
         rows = cursor.fetchall()
         
-        added_ingredients = []
         count = 0
         for row in rows:
             ing_id = row.IngredientID
-            ing_name = row.Name
+            unit = row.Unit
+            missing_qty = row.MissingQty
             
-            # Check if item already exists in shopping list
-            cursor.execute("SELECT ShoppingListItemID FROM ShoppingList WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
-            existing = cursor.fetchone()
-            
-            if not existing:
-                # Only add if it doesn't already exist (avoid duplicates)
-                cursor.execute("""
-                    INSERT INTO ShoppingList (UserID, IngredientID, IsPurchased)
-                    VALUES (?, ?, 0)
-                """, (user_id, ing_id))
-                added_ingredients.append(ing_name)
+            if missing_qty > 0:
+                cursor.execute("SELECT ShoppingListItemID FROM ShoppingList WHERE UserID = ? AND IngredientID = ?", (user_id, ing_id))
+                existing = cursor.fetchone()
+                
+                if existing:
+                     cursor.execute("""
+                        UPDATE ShoppingList 
+                        SET Quantity = CASE WHEN Quantity < ? THEN ? ELSE Quantity END
+                        WHERE ShoppingListItemID = ?
+                     """, (missing_qty, missing_qty, existing[0]))
+                else:
+                    cursor.execute("""
+                        INSERT INTO ShoppingList (UserID, IngredientID, Quantity, Unit, IsPurchased)
+                        VALUES (?, ?, ?, ?, 0)
+                    """, (user_id, ing_id, missing_qty, unit))
                 count += 1
         
         conn.commit()
-        return jsonify({
-            "message": f"Added {count} items", 
-            "addedCount": count,
-            "ingredients": added_ingredients
-        })
+        return jsonify({"message": f"Added {count} items", "addedCount": count})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
