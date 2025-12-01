@@ -190,6 +190,7 @@ class SettingsPanel extends Component {
             {/* Logout Button (pushed to bottom) */}
             <div className="mt-8 pt-4 border-t">
               <button 
+                onClick={this.props.onLogout}
                 className="w-full bg-red-500 text-white font-medium py-2 rounded-lg hover:bg-red-600 transition-colors"
               >
                 Logout
