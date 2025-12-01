@@ -1,16 +1,20 @@
 import React, { Component } from 'react'
+import LoginForm from './login/LoginForm'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
 import RecipeList from './components/RecipeList'
 import InventoryList from './components/InventoryList'
 import SettingsPanel from './components/SettingsPanel'
 import CartModal from './components/CartModal' // Import the cart modal
+import { authService } from './login/authService'
 
 // Main App component
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      user: authService.getUser(),
+      isLoading: true,
       activeTab: 'recipes',
       isOnline: navigator.onLine,
       isSettingsOpen: false,
@@ -21,6 +25,8 @@ class App extends Component {
   }
 
   componentDidMount() {
+    const user = authService.getUser();
+    this.setState({ user, isLoading: false });
     window.addEventListener('online', this.handleOnlineStatus);
     window.addEventListener('offline', this.handleOnlineStatus);
   }
@@ -39,6 +45,16 @@ class App extends Component {
       document.body.style.overflow = isOpen ? 'hidden' : '';
     }
   }
+
+  handleLoginSuccess = (user) => {
+    authService.setUser(user);
+    this.setState({ user });
+  };
+
+  handleLogout = () => {
+    authService.logout();
+    this.setState({ user: null, isSettingsOpen: false });
+  };
 
   handleOnlineStatus = () => {
     this.setState({ isOnline: navigator.onLine });
@@ -107,7 +123,15 @@ class App extends Component {
   }
 
   render() {
-    const { activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
+    const { user, isLoading, activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
+
+    if (isLoading) {
+      return <div style={{ textAlign: 'center', padding: '50px' }}>Loading...</div>
+    }
+
+    if (!user) {
+      return <LoginForm onLoginSuccess={this.handleLoginSuccess} />
+    }
 
     return (
       <div className="App min-h-screen bg-gray-100">
@@ -129,7 +153,7 @@ class App extends Component {
         <SettingsPanel 
           isOpen={isSettingsOpen} 
           onClose={this.toggleSettings}
-          onLogout={this.props.onLogout}
+          onLogout={this.handleLogout}
         />
         
         {/* Render the Cart Modal */}

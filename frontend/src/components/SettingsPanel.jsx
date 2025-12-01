@@ -34,6 +34,17 @@ class SettingsPanel extends Component {
     };
   }
 
+  handleLogoutClick = () => {
+    const { onLogout, onClose } = this.props;
+    try {
+      if (onLogout) onLogout();
+    } catch (e) {
+      // swallow errors from parent
+      console.error('Logout handler error', e);
+    }
+    if (onClose) onClose();
+  }
+
   handlePrepTimeChange = (e) => {
     const value = parseInt(e.target.value);
     // Constrain input to be between 5 and 60 minutes and ensure it's a multiple of 5 if possible
@@ -190,7 +201,7 @@ class SettingsPanel extends Component {
             {/* Logout Button (pushed to bottom) */}
             <div className="mt-8 pt-4 border-t">
               <button 
-                onClick={this.props.onLogout}
+                onClick={this.handleLogoutClick}
                 className="w-full bg-red-500 text-white font-medium py-2 rounded-lg hover:bg-red-600 transition-colors"
               >
                 Logout
