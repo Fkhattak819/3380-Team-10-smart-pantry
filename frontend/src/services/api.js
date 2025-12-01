@@ -139,3 +139,20 @@ export async function removeFromShoppingList(userId, itemId) {
   });
   return handleResponse(response);
 }
+
+export async function getUserPreferences(userId) {
+  const response = await fetch(`${BASE_URL}/users/preferences?userId=${encodeURIComponent(userId)}`, {
+    method: 'GET',
+    headers: getHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function saveUserPreferences(userId, diets) {
+  const response = await fetch(`${BASE_URL}/users/preferences`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ userId, diets })
+  });
+  return handleResponse(response);
+}

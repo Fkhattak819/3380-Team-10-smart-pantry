@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import RecipeCard from './RecipeCard';
 import { RecipeService } from '../services/RecipeService.js';
-import { getRecipeMatches, getPantry, getRecipeDetails } from '../services/api.js';
+import { getRecipeMatches, getPantry, getRecipeDetails, searchRecipes } from '../services/api.js';
 import RecipeModal from './RecipeModal';
 
 // Recipe list component
@@ -9,6 +9,8 @@ class RecipeList extends Component {
   constructor(props) {
     super(props);
     this.recipeService = new RecipeService();
+    this.recipeIngredientsCache = {}; // Cache for recipe ingredients
+    this.allRecipesCache = null; // Cache for all recipes when filters are active
     
     this.state = {
       recipes: [],
@@ -22,6 +24,7 @@ class RecipeList extends Component {
         almostReady: 0
       },
       selectedRecipe: null,
+      isSearchMode: false, // Track if we're in search mode
     };
   }
 
@@ -49,37 +52,210 @@ class RecipeList extends Component {
       JSON.stringify(prevProps.filters.selectedAllergens || []) !== JSON.stringify(this.props.filters.selectedAllergens || []);
     
     if (filtersChanged) {
-      const currentFiltered = this.getCurrentFilteredRecipes();
+      const { filters } = this.props;
+      
+      // Check if all filters are reset to defaults (like on startup)
+      const isResetToDefaults = filters && 
+        filters.maxPrepTime === 60 &&
+        !filters.selectedDiet &&
+        (!filters.selectedAllergens || filters.selectedAllergens.length === 0) &&
+        filters.minCalories === null &&
+        filters.maxCalories === null;
+      
+      // Check if we have filters other than just time
+      const hasDietOrAllergenFilters = filters && (
+        filters.selectedDiet || 
+        (filters.selectedAllergens && filters.selectedAllergens.length > 0) ||
+        filters.minCalories !== null ||
+        filters.maxCalories !== null
+      );
+
+      // If reset to defaults and not in search mode, do a full reload (like on startup)
+      if (isResetToDefaults && !this.state.isSearchMode && !this.state.searchQuery) {
+        this.loadRecipes();
+      }
+      // If we have diet/allergen/calorie filters and we're not in search mode, load more recipes
+      else if (hasDietOrAllergenFilters && !this.state.isSearchMode && !this.state.searchQuery) {
+        this.loadRecipesForFiltering();
+      } else {
+        this.getCurrentFilteredRecipes().then(currentFiltered => {
+          // Always limit to top 10 by match percentage
+          const top10Filtered = currentFiltered.slice(0, 10);
+          this.setState({
+            filteredRecipes: this.applySearchFilter(top10Filtered)
+          });
+        });
+      }
+    }
+  }
+
+  async loadRecipesForFiltering() {
+    // Load more recipes when filters are active to ensure we can show 10 filtered results
+    try {
+      this.setState({ isLoading: true });
+      
+      // Use search with empty query to get up to 50 recipes
+      const searchResults = await searchRecipes('');
+      
+      // Transform and calculate match percentages and missing ingredients
+      const transformedRecipes = await Promise.all(searchResults.map(async (recipe) => {
+        const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
+        const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
+        const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
+        
+        return {
+          id: recipe.RecipeID,
+          title: recipe.Title,
+          time_minutes: recipe.TimeMinutes,
+          servings: recipe.Servings,
+          calories_per_serving: recipe.CaloriesPerServing,
+          imageURL: recipe.ImageURL || null,
+          matchPercentage: matchPercentage,
+          totalIngredients: ingredients.length,
+          ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
+          missingIngredients: missingIngredients,
+          tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
+        };
+      }));
+
+      // Sort by match percentage (descending) before filtering
+      transformedRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
+
+      // Apply filters
+      const filtered = await this.applyFilters(transformedRecipes);
+      
+      // Always take top 10 filtered results sorted by match percentage (already sorted in applyFilters)
+      const top10Filtered = filtered.slice(0, 10);
+
       this.setState({
-        filteredRecipes: this.applySearchFilter(currentFiltered)
+        recipes: transformedRecipes,
+        filteredRecipes: top10Filtered,
+        filterCounts: {
+          all: transformedRecipes.length,
+          ready: transformedRecipes.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+          almostReady: transformedRecipes.filter(r => {
+            const mp = Math.round(Number(r.matchPercentage) || 0);
+            return mp >= 75 && mp < 100;
+          }).length
+        },
+        isLoading: false
       });
+    } catch (error) {
+      console.error('Error loading recipes for filtering:', error);
+      this.setState({ isLoading: false });
+    }
+  }
+
+  async calculateMatchPercentage(recipeId, ingredients) {
+    // Calculate match percentage based on user's pantry
+    try {
+      const userId = 1;
+      const pantryData = await getPantry(userId);
+      const pantryIngredientNames = new Set(pantryData.map(item => item.Name.toLowerCase()));
+      
+      if (ingredients.length === 0) return 0;
+      
+      const matchingIngredients = ingredients.filter(ing => 
+        pantryIngredientNames.has(ing.toLowerCase())
+      );
+      
+      return Math.round((matchingIngredients.length / ingredients.length) * 100);
+    } catch (error) {
+      console.error('Error calculating match percentage:', error);
+      return 0;
+    }
+  }
+
+  async calculateMissingIngredients(recipeId, ingredients) {
+    // Calculate missing ingredients by comparing recipe ingredients with user's pantry
+    try {
+      const userId = 1;
+      const pantryData = await getPantry(userId);
+      const pantryIngredientNames = new Set(pantryData.map(item => item.Name.toLowerCase()));
+      
+      if (ingredients.length === 0) return [];
+      
+      const missingIngredients = ingredients.filter(ing => {
+        const ingLower = ing.toLowerCase();
+        return !pantryIngredientNames.has(ingLower);
+      });
+      
+      return missingIngredients.map(name => ({ name }));
+    } catch (error) {
+      console.error('Error calculating missing ingredients:', error);
+      return [];
     }
   }
 
   async loadRecipes() {
     try {
       const userId = 1; // Default user ID - you can make this dynamic later
+      const { filters } = this.props;
+      
+      // Check if we have filters other than just time
+      const hasDietOrAllergenFilters = filters && (
+        filters.selectedDiet || 
+        (filters.selectedAllergens && filters.selectedAllergens.length > 0) ||
+        filters.minCalories !== null ||
+        filters.maxCalories !== null
+      );
+      
+      // Check if time filter is different from default
+      const hasTimeFilter = filters && filters.maxPrepTime !== 60;
 
-      // Fetch recipe matches from Flask backend via helper
+      // If we have diet/allergen/calorie filters, load more recipes for filtering
+      // If only time filter, still use normal matches but apply time filter
+      if (hasDietOrAllergenFilters) {
+        await this.loadRecipesForFiltering();
+        return;
+      }
+
+      // If only time filter or no filters, use normal recipe matches (top 10 by match percentage)
       const matchesData = await getRecipeMatches(userId);
 
       // Transform API response to match Recipe model format
-      const recipesData = matchesData.map(match => ({
-        id: match.RecipeID,
-        title: match.Title,
-        time_minutes: match.TimeMinutes,
-        servings: match.Servings,
-        calories_per_serving: match.CaloriesPerServing,
-        imageURL: match.ImageURL || null,
-        matchPercentage: match.MatchPercentage,
-        totalIngredients: match.TotalIngredients,
-        ingredientsUserHas: match.IngredientsUserHas,
-        missingIngredients: match.MissingIngredients || [], // Array of missing ingredient names
-        tags: match.Tags ? match.Tags.split(',').map(t => t.trim()) : []
-      }));
+      const recipesData = matchesData.map(match => {
+        // Handle missing ingredients - can be array or comma-separated string
+        let missingIngredients = [];
+        if (match.MissingIngredients) {
+          if (Array.isArray(match.MissingIngredients)) {
+            missingIngredients = match.MissingIngredients.map(name => ({ name }));
+          } else if (typeof match.MissingIngredients === 'string') {
+            // Split comma-separated string and filter out empty strings
+            missingIngredients = match.MissingIngredients
+              .split(',')
+              .map(name => name.trim())
+              .filter(name => name.length > 0)
+              .map(name => ({ name }));
+          }
+        }
+        
+        return {
+          id: match.RecipeID,
+          title: match.Title,
+          time_minutes: match.TimeMinutes,
+          servings: match.Servings,
+          calories_per_serving: match.CaloriesPerServing,
+          imageURL: match.ImageURL || null,
+          matchPercentage: match.MatchPercentage,
+          totalIngredients: match.TotalIngredients,
+          ingredientsUserHas: match.IngredientsUserHas,
+          missingIngredients: missingIngredients,
+          tags: match.Tags ? match.Tags.split(',').map(t => t.trim()) : []
+        };
+      });
       
-      // Apply filters to initial recipes
-      const filteredRecipes = this.applyFilters(recipesData);
+      // Sort by match percentage (descending) before filtering
+      recipesData.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
+      
+      // Pre-fetch ingredients for all recipes to enable ingredient-based filtering
+      await this.preloadRecipeIngredients(recipesData);
+      
+      // Apply filters to initial recipes (if only time filter, this will just filter by time)
+      let filteredRecipes = await this.applyFilters(recipesData);
+      
+      // Always limit to top 10 by match percentage after filtering
+      filteredRecipes = filteredRecipes.slice(0, 10);
       
       // Store recipes with match info
       this.setState({
@@ -99,6 +275,15 @@ class RecipeList extends Component {
       console.error('Error loading recipes:', error);
       this.setState({ isLoading: false });
     }
+  }
+
+  async preloadRecipeIngredients(recipes) {
+    // Pre-fetch ingredients for all recipes in parallel (with limit to avoid too many requests)
+    const recipesToLoad = recipes.slice(0, 50); // Limit to first 50 recipes
+    const ingredientPromises = recipesToLoad.map(recipe => 
+      this.getRecipeIngredients(recipe.id).catch(() => [])
+    );
+    await Promise.all(ingredientPromises);
   }
 
   async setupAvailableIngredients() {
@@ -130,31 +315,38 @@ class RecipeList extends Component {
     });
   }
 
-  handleFilterChange = (filter) => {
+  handleFilterChange = async (filter) => {
     let filteredRecipes = [];
     
     switch (filter) {
       case 'all':
-        filteredRecipes = this.state.recipes;
+        filteredRecipes = [...this.state.recipes]; // Create copy to maintain sort
         break;
       case 'ready':
         filteredRecipes = this.state.recipes.filter(r => {
           const mp = Math.round(Number(r.matchPercentage) || 0);
           return mp >= 100;
         });
+        // Sort by match percentage (descending) to maintain order
+        filteredRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
         break;
       case 'almostReady':
         filteredRecipes = this.state.recipes.filter(r => {
           const mp = Math.round(Number(r.matchPercentage) || 0);
           return mp >= 75 && mp < 100;
         });
+        // Sort by match percentage (descending) to maintain order
+        filteredRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
         break;
       default:
-        filteredRecipes = this.state.recipes;
+        filteredRecipes = [...this.state.recipes]; // Create copy to maintain sort
     }
 
     // Apply advanced filters (from SettingsPanel) - time, calories, diet, allergens
-    filteredRecipes = this.applyFilters(filteredRecipes);
+    filteredRecipes = await this.applyFilters(filteredRecipes);
+    
+    // Always limit to top 10 by match percentage
+    filteredRecipes = filteredRecipes.slice(0, 10);
 
     this.setState({ 
       activeFilter: filter,
@@ -162,17 +354,89 @@ class RecipeList extends Component {
     });
   };
 
-  handleSearchChange = (e) => {
-    const query = e.target.value;
-    // getCurrentFilteredRecipes already applies filters, so we just need to apply search
-    const filteredByMatchAndFilters = this.getCurrentFilteredRecipes();
-    this.setState({ 
-      searchQuery: query,
-      filteredRecipes: this.applySearchFilter(filteredByMatchAndFilters, query)
-    });
+  handleSearchChange = async (e) => {
+    const query = e.target.value.trim();
+    const { filters } = this.props;
+    const hasFilters = filters && (
+      filters.selectedDiet || 
+      (filters.selectedAllergens && filters.selectedAllergens.length > 0) ||
+      filters.maxPrepTime !== 60 ||
+      filters.minCalories !== null ||
+      filters.maxCalories !== null
+    );
+
+    if (query.length > 0) {
+      // User is typing - use search API to get all matching recipes
+      try {
+        this.setState({ isLoading: true, isSearchMode: true });
+        const searchResults = await searchRecipes(query);
+        
+        // Transform search results to match our recipe format
+        const transformedRecipes = await Promise.all(searchResults.map(async (recipe) => {
+          // Get ingredients for match percentage calculation
+          const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
+          
+          // Calculate match percentage and missing ingredients based on pantry
+          const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
+          const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
+          
+          return {
+            id: recipe.RecipeID,
+            title: recipe.Title,
+            time_minutes: recipe.TimeMinutes,
+            servings: recipe.Servings,
+            calories_per_serving: recipe.CaloriesPerServing,
+            imageURL: recipe.ImageURL || null,
+            matchPercentage: matchPercentage,
+            totalIngredients: ingredients.length,
+            ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
+            missingIngredients: missingIngredients,
+            tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
+          };
+        }));
+
+        // Sort by match percentage (descending) before filtering
+        transformedRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
+
+        // When searching, show ALL matching recipes (don't limit to 10)
+        // Apply filters if any, but still show all filtered results
+        let filtered = transformedRecipes;
+        if (hasFilters) {
+          filtered = await this.applyFilters(transformedRecipes);
+        }
+        
+        // Note: For search, we show all results. For non-search, we limit to top 10.
+
+        this.setState({ 
+          searchQuery: query,
+          recipes: transformedRecipes,
+          filteredRecipes: filtered,
+          filterCounts: {
+            all: transformedRecipes.length,
+            ready: transformedRecipes.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+            almostReady: transformedRecipes.filter(r => {
+              const mp = Math.round(Number(r.matchPercentage) || 0);
+              return mp >= 75 && mp < 100;
+            }).length
+          },
+          isLoading: false
+        });
+      } catch (error) {
+        console.error('Error searching recipes:', error);
+        this.setState({ isLoading: false });
+      }
+    } else {
+      // User cleared search - reload recipes normally
+      this.setState({ 
+        searchQuery: '',
+        isSearchMode: false,
+        isLoading: true
+      });
+      await this.loadRecipes();
+    }
   };
 
-  getCurrentFilteredRecipes() {
+  async getCurrentFilteredRecipes() {
     const { activeFilter } = this.state;
     let recipes = [];
     
@@ -182,19 +446,26 @@ class RecipeList extends Component {
           const mp = Math.round(Number(r.matchPercentage) || 0);
           return mp >= 100;
         });
+        // Sort by match percentage (descending) to maintain order
+        recipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
         break;
       case 'almostReady':
         recipes = this.state.recipes.filter(r => {
           const mp = Math.round(Number(r.matchPercentage) || 0);
           return mp >= 75 && mp < 100;
         });
+        // Sort by match percentage (descending) to maintain order
+        recipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
         break;
       default:
-        recipes = this.state.recipes;
+        recipes = [...this.state.recipes]; // Create copy to maintain sort
     }
 
-    // Apply advanced filters (from SettingsPanel)
-    return this.applyFilters(recipes);
+    // Apply advanced filters (from SettingsPanel) - this will also sort
+    const filtered = await this.applyFilters(recipes);
+    
+    // Always limit to top 10 by match percentage
+    return filtered.slice(0, 10);
   }
 
   applySearchFilter(recipes, query = this.state.searchQuery) {
@@ -205,7 +476,24 @@ class RecipeList extends Component {
     );
   }
 
-  applyFilters(recipes) {
+  async getRecipeIngredients(recipeId) {
+    // Check cache first
+    if (this.recipeIngredientsCache[recipeId]) {
+      return this.recipeIngredientsCache[recipeId];
+    }
+    
+    try {
+      const recipeDetails = await getRecipeDetails(recipeId);
+      const ingredients = (recipeDetails.ingredients || []).map(ing => ing.Name.toLowerCase());
+      this.recipeIngredientsCache[recipeId] = ingredients;
+      return ingredients;
+    } catch (error) {
+      console.error(`Error fetching ingredients for recipe ${recipeId}:`, error);
+      return [];
+    }
+  }
+
+  async applyFilters(recipes) {
     const { filters } = this.props;
     if (!filters || !recipes || recipes.length === 0) return recipes;
 
@@ -231,65 +519,123 @@ class RecipeList extends Component {
       );
     }
 
-    // Filter by diet type
+    // Filter by diet type - check ingredients
     if (filters.selectedDiet) {
-      const dietLower = filters.selectedDiet.toLowerCase();
-      filtered = filtered.filter(recipe => {
-        const recipeTags = (recipe.tags || []).map(t => t.toLowerCase());
-        return recipeTags.includes(dietLower);
+      const dietKeywords = this.getDietIngredientKeywords(filters.selectedDiet);
+      const filteredPromises = filtered.map(async (recipe) => {
+        const ingredients = await this.getRecipeIngredients(recipe.id);
+        return this.checkDietaryRestriction(ingredients, filters.selectedDiet, dietKeywords);
       });
+      const dietResults = await Promise.all(filteredPromises);
+      filtered = filtered.filter((_, index) => dietResults[index]);
     }
 
-    // Filter by allergens (exclude recipes with selected allergens)
+    // Filter by allergens - check ingredients
     if (filters.selectedAllergens && filters.selectedAllergens.length > 0) {
-      const allergenMap = {
-        'Celery': ['celery'],
-        'Gluten': ['gluten', 'gluten_free'], // Recipes with gluten_free tag don't have gluten
-        'Crustaceans': ['crustaceans', 'shellfish'],
-        'Eggs': ['egg', 'eggs'],
-        'Fish': ['fish', 'seafood'],
-        'Lupin': ['lupin'],
-        'Milk': ['dairy', 'milk', 'cheese'],
-        'Molluscs': ['molluscs', 'shellfish'],
-        'Mustard': ['mustard'],
-        'Peanuts': ['peanuts', 'peanut'],
-        'Sesame': ['sesame'],
-        'Soybeans': ['soy', 'soybeans', 'soybean'],
-        'Sulphites': ['sulphites', 'sulfites']
-      };
-      
-      const initialCount = filtered.length;
-      filtered = filtered.filter(recipe => {
-        const recipeTags = (recipe.tags || []).map(t => t.toLowerCase().trim());
-        
-        // Check if recipe has any of the excluded allergens
-        for (const allergen of filters.selectedAllergens) {
-          const tagsToCheck = allergenMap[allergen] || [allergen.toLowerCase()];
-          
-          // Special case: if filtering for gluten, only include recipes with gluten_free tag
-          if (allergen === 'Gluten') {
-            const hasGlutenFree = recipeTags.includes('gluten_free') || recipeTags.includes('gluten-free');
-            if (!hasGlutenFree) {
-              // Recipe doesn't have gluten_free tag, so it likely contains gluten - exclude it
-              return false;
-            }
-          } else {
-            // For other allergens, check if recipe has any matching tags
-            // If recipe has any tag that matches the allergen, exclude it
-            for (const tagToCheck of tagsToCheck) {
-              if (recipeTags.includes(tagToCheck)) {
-                return false; // Exclude this recipe - it contains the allergen
-              }
-            }
-          }
-        }
-        return true; // Include this recipe - it doesn't contain any excluded allergens
+      const allergenKeywords = this.getAllergenIngredientKeywords(filters.selectedAllergens);
+      const filteredPromises = filtered.map(async (recipe) => {
+        const ingredients = await this.getRecipeIngredients(recipe.id);
+        return !this.containsAllergens(ingredients, allergenKeywords);
       });
-      
-      console.log(`Allergen filter: ${initialCount} recipes -> ${filtered.length} recipes (excluded: ${filters.selectedAllergens.join(', ')})`);
+      const allergenResults = await Promise.all(filteredPromises);
+      filtered = filtered.filter((_, index) => allergenResults[index]);
     }
+
+    // Sort by match percentage (descending) to prioritize recipes with higher match
+    filtered.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
 
     return filtered;
+  }
+
+  getDietIngredientKeywords(diet) {
+    const dietLower = diet.toLowerCase();
+    const keywordMap = {
+      'vegan': {
+        exclude: ['meat', 'chicken', 'beef', 'pork', 'fish', 'seafood', 'egg', 'eggs', 'milk', 'cheese', 'butter', 'dairy', 'honey', 'gelatin'],
+        require: []
+      },
+      'vegetarian': {
+        exclude: ['meat', 'chicken', 'beef', 'pork', 'fish', 'seafood', 'bacon', 'sausage', 'ham'],
+        require: []
+      },
+      'pescatarian': {
+        exclude: ['meat', 'chicken', 'beef', 'pork', 'bacon', 'sausage', 'ham'],
+        require: []
+      },
+      'keto': {
+        exclude: ['bread', 'pasta', 'rice', 'potato', 'potatoes', 'sugar', 'flour', 'wheat'],
+        require: []
+      },
+      'paleo': {
+        exclude: ['bread', 'pasta', 'rice', 'wheat', 'flour', 'dairy', 'milk', 'cheese', 'legume', 'bean', 'beans'],
+        require: []
+      },
+      'low_carb': {
+        exclude: ['bread', 'pasta', 'rice', 'potato', 'potatoes', 'sugar'],
+        require: []
+      }
+    };
+    return keywordMap[dietLower] || { exclude: [], require: [] };
+  }
+
+  getAllergenIngredientKeywords(allergens) {
+    const allergenMap = {
+      'gluten_free': ['wheat', 'flour', 'bread', 'pasta', 'gluten', 'barley', 'rye', 'oats'],
+      'dairy_free': ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'yoghurt', 'dairy', 'whey', 'casein'],
+      'egg_free': ['egg', 'eggs', 'mayonnaise', 'mayo'],
+      'soy_free': ['soy', 'soya', 'soybean', 'tofu', 'tempeh', 'miso'],
+      'nut_free': ['peanut', 'peanuts', 'almond', 'almonds', 'walnut', 'walnuts', 'cashew', 'cashews', 'hazelnut', 'pistachio'],
+      'shellfish_free': ['shrimp', 'prawn', 'crab', 'lobster', 'scallop', 'mussel', 'oyster', 'shellfish', 'crustacean'],
+      'pork_free': ['pork', 'bacon', 'ham', 'sausage', 'prosciutto', 'pancetta'],
+      'beef_free': ['beef', 'steak', 'ground beef', 'hamburger']
+    };
+    
+    const allKeywords = [];
+    allergens.forEach(allergen => {
+      const keywords = allergenMap[allergen.toLowerCase()] || [];
+      allKeywords.push(...keywords);
+    });
+    return allKeywords;
+  }
+
+  async checkDietaryRestriction(ingredients, diet, dietKeywords) {
+    const ingredientSet = new Set(ingredients);
+    
+    // Check for excluded ingredients
+    for (const excludeKeyword of dietKeywords.exclude) {
+      for (const ingredient of ingredients) {
+        if (ingredient.includes(excludeKeyword.toLowerCase())) {
+          return false;
+        }
+      }
+    }
+    
+    // Check for required ingredients (if any)
+    if (dietKeywords.require.length > 0) {
+      const hasRequired = dietKeywords.require.some(req => 
+        ingredients.some(ing => ing.includes(req.toLowerCase()))
+      );
+      if (!hasRequired) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  containsAllergens(ingredients, allergenKeywords) {
+    const allergenSet = new Set(allergenKeywords.map(k => k.toLowerCase()));
+    
+    for (const ingredient of ingredients) {
+      const ingLower = ingredient.toLowerCase();
+      for (const allergen of allergenSet) {
+        if (ingLower.includes(allergen)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 
   handleViewRecipe = async (recipe) => {
@@ -401,11 +747,19 @@ class RecipeList extends Component {
                 const rawMatch = Number(recipe.matchPercentage) || 0;
                 const matchPercentage = Math.round(rawMatch);
 
+                // Ensure missingIngredients is in the correct format (array of objects with name property)
+                const missingIngredients = (recipe.missingIngredients || []).map(item => {
+                  if (typeof item === 'string') {
+                    return { name: item };
+                  }
+                  return item; // Already an object with name property
+                });
+
                 const matchInfo = {
                   matchPercentage,
                   totalIngredients: recipe.totalIngredients || 0,
                   availableIngredients: recipe.ingredientsUserHas || 0,
-                  missingIngredients: (recipe.missingIngredients || []).map(name => ({ name })),
+                  missingIngredients: missingIngredients,
                   status: matchPercentage >= 100
                     ? 'ready'
                     : matchPercentage >= 75
