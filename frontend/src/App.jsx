@@ -128,7 +128,8 @@ class App extends Component {
         
         <SettingsPanel 
           isOpen={isSettingsOpen} 
-          onClose={this.toggleSettings} 
+          onClose={this.toggleSettings}
+          onLogout={this.props.onLogout}
         />
         
         {/* Render the Cart Modal */}
