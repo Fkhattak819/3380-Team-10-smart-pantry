@@ -1,27 +1,18 @@
 /*
 =============================================================================
- UPDATE SHOPPING LIST SCHEMA
+ REMOVE EXPIRY DATE COLUMN
 =============================================================================
- Adds Quantity and Unit columns to the ShoppingList table to match
- the Pantry table structure.
+ This script removes the 'ExpiryDate' column from the Pantry table
+ as the feature is no longer being supported.
 */
 
-PRINT 'Updating ShoppingList table...';
-
--- 1. Add Quantity (Default to 1 for existing rows)
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ShoppingList') AND name = 'Quantity')
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Pantry') AND name = 'ExpiryDate')
 BEGIN
-    ALTER TABLE ShoppingList
-    ADD Quantity FLOAT DEFAULT 1;
-    PRINT 'Added Quantity column.';
+    ALTER TABLE Pantry
+    DROP COLUMN ExpiryDate;
+    PRINT 'ExpiryDate column dropped successfully.';
 END
-
--- 2. Add Unit (Default to 'count' for existing rows)
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ShoppingList') AND name = 'Unit')
+ELSE
 BEGIN
-    ALTER TABLE ShoppingList
-    ADD Unit NVARCHAR(255) DEFAULT 'count';
-    PRINT 'Added Unit column.';
+    PRINT 'ExpiryDate column does not exist (already dropped).';
 END
-
-PRINT 'ShoppingList table updated.';

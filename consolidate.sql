@@ -1,33 +1,27 @@
 /*
 =============================================================================
- ADD DIETARY CHECK FLAG
+ REMOVE MANUAL RECIPES (TEXT IDs)
 =============================================================================
- Adds a column to track which recipes have already been analyzed by the AI.
+ This script deletes all recipes that have NON-NUMERIC IDs.
+ This targets the manual recipes from your original json file 
+ (e.g. 'cheese_omelette', 'veggie_fried_rice') while preserving 
+ the API recipes (which have numeric IDs).
 */
 
--- 1. Add the column if it doesn't exist
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Recipes') AND name = 'IsDietaryChecked')
-BEGIN
-    ALTER TABLE Recipes
-    ADD IsDietaryChecked BIT DEFAULT 0;
-    PRINT 'Column IsDietaryChecked added.';
-END
-GO -- <--- THIS IS THE FIX: Forces the column to be created before continuing
+PRINT 'Deleting manual recipes (Text IDs)...';
 
--- 2. Backfill: Mark recipes as "Checked" if they already have a dietary tag
--- This saves the API calls you just made!
-UPDATE Recipes 
-SET IsDietaryChecked = 1 
-WHERE RecipeID IN (
-    SELECT rt.RecipeID 
-    FROM RecipeTags rt 
-    JOIN Tags t ON rt.TagID = t.TagID 
-    WHERE t.TagName IN (
-        'vegan', 'vegetarian', 'pescatarian', 
-        'gluten_free', 'dairy_free', 'egg_free', 'soy_free', 'nut_free', 'shellfish_free',
-        'pork_free', 'beef_free',
-        'keto', 'paleo', 'low_carb', 'no_added_sugar'
-    )
-);
+-- 1. Delete from linking tables first (Foreign Key constraints)
+DELETE FROM RecipeIngredients 
+WHERE ISNUMERIC(RecipeID) = 0;
 
-PRINT 'Flags updated for existing tags.';
+DELETE FROM RecipeTags 
+WHERE ISNUMERIC(RecipeID) = 0;
+
+DELETE FROM Instructions 
+WHERE ISNUMERIC(RecipeID) = 0;
+
+-- 2. Delete from main Recipes table
+DELETE FROM Recipes 
+WHERE ISNUMERIC(RecipeID) = 0;
+
+PRINT 'Manual recipes deleted. API recipes preserved.';
