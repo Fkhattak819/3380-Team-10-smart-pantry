@@ -98,13 +98,6 @@ export async function getRecipeDetails(recipeId) {
   return handleResponse(response);
 }
 
-export async function searchRecipes(query) {
-  const response = await fetch(`${BASE_URL}/recipes/search?q=${encodeURIComponent(query)}`, {
-    method: 'GET',
-    headers: getHeaders()
-  });
-  return handleResponse(response);
-}
 
 export async function getShoppingList(userId) {
   const response = await fetch(`${BASE_URL}/shopping-list?userId=${encodeURIComponent(userId)}`, {
