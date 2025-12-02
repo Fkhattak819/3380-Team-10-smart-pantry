@@ -39,7 +39,15 @@ Open your browser to the URL shown in the terminal (usually http://localhost:300
 
 ## How to Use
 
-1. **Sign up** - Create an account with a username and password
+### Login Options
+
+You can either:
+- **Use existing test account**: Username: `testuser999`, Password: `testpass999`
+- **Sign up** - Create a new account with your own username and password
+
+### Using the App
+
+1. **Login** - Use the test account or sign up for a new one
 2. **Add ingredients** - Go to the Pantry tab and add ingredients you have
 3. **Find recipes** - Go to the Recipes tab to see recipes you can make
 4. **Filter recipes** - Use the settings button to filter by diet, calories, etc.
