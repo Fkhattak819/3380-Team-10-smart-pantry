@@ -1,7 +1,4 @@
-/**
- * PantryItem class represents a single item in the pantry
- * Follows object-oriented design principles
- */
+// PantryItem represents a single item in the pantry
 export class PantryItem {
   constructor(id, name, quantity = 1, unit = '') {
     this._id = id;
@@ -11,7 +8,6 @@ export class PantryItem {
     this._dateAdded = new Date();
   }
 
-  // Getters
   get id() {
     return this._id;
   }

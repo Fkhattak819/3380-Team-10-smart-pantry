@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import RecipeCard from './RecipeCard';
-import { RecipeService } from '../services/RecipeService.js';
 import { getRecipeMatches, getPantry, getRecipeDetails, searchRecipes } from '../services/api.js';
 import RecipeModal from './RecipeModal';
 
@@ -8,9 +7,11 @@ import RecipeModal from './RecipeModal';
 class RecipeList extends Component {
   constructor(props) {
     super(props);
-    this.recipeService = new RecipeService();
+    this.availableIngredients = []; // Store available ingredients from pantry
     this.recipeIngredientsCache = {}; // Cache for recipe ingredients
     this.allRecipesCache = null; // Cache for all recipes when filters are active
+    this._isMounted = false; // Track if component is mounted (use _ prefix to avoid conflicts)
+    this.loadTimeout = null; // Track pending loads to cancel if needed
     
     this.state = {
       recipes: [],
@@ -29,17 +30,52 @@ class RecipeList extends Component {
   }
 
   componentDidMount() {
-    // Use Promise.allSettled to handle errors gracefully
-    Promise.allSettled([
-      this.loadRecipes(),
-      this.setupAvailableIngredients()
-    ]).catch(error => {
+    try {
+      this._isMounted = true;
+      
+      // Load recipes - defer to prevent blocking UI
+      setTimeout(() => {
+        if (this._isMounted) {
+          Promise.allSettled([
+            this.loadRecipes(),
+            this.setupAvailableIngredients()
+          ]).catch(error => {
+            console.error('Error in componentDidMount:', error);
+            if (this._isMounted) {
+              this.setState({ isLoading: false });
+            }
+          });
+        }
+      }, 0);
+    } catch (error) {
       console.error('Error in componentDidMount:', error);
-      this.setState({ isLoading: false });
-    });
+      if (this._isMounted) {
+        this.setState({ isLoading: false });
+      }
+    }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
+    // Cancel any pending loads
+    if (this.loadTimeout) {
+      clearTimeout(this.loadTimeout);
+      this.loadTimeout = null;
+    }
   }
 
   componentDidUpdate(prevProps) {
+    // Only process if filters prop actually exists and changed
+    // Skip if filters prop doesn't exist (prevents unnecessary processing)
+    if (!this.props.filters && !prevProps.filters) {
+      return; // No filters, skip processing
+    }
+    
+    // Quick reference check first - if same object reference, skip
+    if (prevProps.filters === this.props.filters) {
+      return; // Same object reference, no change
+    }
+    
     // Re-apply filters when filters prop changes
     // Deep comparison of filter values to detect changes
     const filtersChanged = 
@@ -51,7 +87,13 @@ class RecipeList extends Component {
       prevProps.filters.maxCalories !== this.props.filters.maxCalories ||
       JSON.stringify(prevProps.filters.selectedAllergens || []) !== JSON.stringify(this.props.filters.selectedAllergens || []);
     
-    if (filtersChanged) {
+    // Only process if filters actually changed
+    if (!filtersChanged) {
+      return;
+    }
+    
+    // Use setTimeout to defer heavy operations and prevent blocking UI
+    setTimeout(() => {
       const { filters } = this.props;
       
       // Check if all filters are reset to defaults (like on startup)
@@ -86,7 +128,7 @@ class RecipeList extends Component {
           });
         });
       }
-    }
+    }, 0); // Defer to next event loop tick
   }
 
   async loadRecipesForFiltering() {
@@ -97,26 +139,42 @@ class RecipeList extends Component {
       // Use search with empty query to get up to 50 recipes
       const searchResults = await searchRecipes('');
       
-      // Transform and calculate match percentages and missing ingredients
-      const transformedRecipes = await Promise.all(searchResults.map(async (recipe) => {
-        const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
-        const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
-        const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
+      // Transform and calculate match percentages and missing ingredients with throttling
+      // Process in batches to avoid rate limiting
+      const batchSize = 10;
+      const delayBetweenBatches = 2000; // 2 seconds between batches
+      const transformedRecipes = [];
+      
+      for (let i = 0; i < searchResults.length; i += batchSize) {
+        const batch = searchResults.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (recipe) => {
+          const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
+          const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
+          const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
+          
+          return {
+            id: recipe.RecipeID,
+            title: recipe.Title,
+            time_minutes: recipe.TimeMinutes,
+            servings: recipe.Servings,
+            calories_per_serving: recipe.CaloriesPerServing,
+            imageURL: recipe.ImageURL || null,
+            matchPercentage: matchPercentage,
+            totalIngredients: ingredients.length,
+            ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
+            missingIngredients: missingIngredients,
+            tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
+          };
+        });
         
-        return {
-          id: recipe.RecipeID,
-          title: recipe.Title,
-          time_minutes: recipe.TimeMinutes,
-          servings: recipe.Servings,
-          calories_per_serving: recipe.CaloriesPerServing,
-          imageURL: recipe.ImageURL || null,
-          matchPercentage: matchPercentage,
-          totalIngredients: ingredients.length,
-          ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
-          missingIngredients: missingIngredients,
-          tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
-        };
-      }));
+        const batchResults = await Promise.all(batchPromises);
+        transformedRecipes.push(...batchResults);
+        
+        // Wait before next batch (except for the last batch)
+        if (i + batchSize < searchResults.length) {
+          await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+        }
+      }
 
       // Sort by match percentage (descending) before filtering
       transformedRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
@@ -146,11 +204,34 @@ class RecipeList extends Component {
     }
   }
 
-  async calculateMatchPercentage(recipeId, ingredients) {
-    // Calculate match percentage based on user's pantry
+  // Cache pantry data to avoid repeated API calls
+  pantryCache = null;
+  pantryCacheTime = null;
+  PANTRY_CACHE_DURATION = 60000; // 1 minute cache
+
+  async getPantryData() {
+    // Use cached pantry data if available and fresh
+    const now = Date.now();
+    if (this.pantryCache && this.pantryCacheTime && (now - this.pantryCacheTime) < this.PANTRY_CACHE_DURATION) {
+      return this.pantryCache;
+    }
+
     try {
       const userId = 1;
       const pantryData = await getPantry(userId);
+      this.pantryCache = pantryData;
+      this.pantryCacheTime = now;
+      return pantryData;
+    } catch (error) {
+      console.error('Error fetching pantry:', error);
+      return this.pantryCache || []; // Return cached data if available, even if stale
+    }
+  }
+
+  async calculateMatchPercentage(recipeId, ingredients) {
+    // Calculate match percentage based on user's pantry
+    try {
+      const pantryData = await this.getPantryData();
       const pantryIngredientNames = new Set(pantryData.map(item => item.Name.toLowerCase()));
       
       if (ingredients.length === 0) return 0;
@@ -169,8 +250,7 @@ class RecipeList extends Component {
   async calculateMissingIngredients(recipeId, ingredients) {
     // Calculate missing ingredients by comparing recipe ingredients with user's pantry
     try {
-      const userId = 1;
-      const pantryData = await getPantry(userId);
+      const pantryData = await this.getPantryData();
       const pantryIngredientNames = new Set(pantryData.map(item => item.Name.toLowerCase()));
       
       if (ingredients.length === 0) return [];
@@ -248,29 +328,33 @@ class RecipeList extends Component {
       // Sort by match percentage (descending) before filtering
       recipesData.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
       
-      // Pre-fetch ingredients for all recipes to enable ingredient-based filtering
-      await this.preloadRecipeIngredients(recipesData);
+      // Show recipes immediately, load ingredients in background (non-blocking)
+      // Pre-fetch ingredients for recipes in background to enable ingredient-based filtering
+      this.preloadRecipeIngredients(recipesData).catch(err => console.error('Error preloading ingredients:', err));
       
       // Apply filters to initial recipes (if only time filter, this will just filter by time)
+      // Note: ingredient-based filters will work after ingredients are loaded
       let filteredRecipes = await this.applyFilters(recipesData);
       
       // Always limit to top 10 by match percentage after filtering
       filteredRecipes = filteredRecipes.slice(0, 10);
       
-      // Store recipes with match info
-      this.setState({
-        recipes: recipesData,
-        filteredRecipes: this.applySearchFilter(filteredRecipes),
-        filterCounts: {
-          all: recipesData.length,
-          ready: recipesData.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
-          almostReady: recipesData.filter(r => {
-            const mp = Math.round(Number(r.matchPercentage) || 0);
-            return mp >= 75 && mp < 100;
-          }).length
-        },
-        isLoading: false
-      });
+      // Store recipes with match info - only update if component is still mounted
+      if (this._isMounted) {
+        this.setState({
+          recipes: recipesData,
+          filteredRecipes: this.applySearchFilter(filteredRecipes),
+          filterCounts: {
+            all: recipesData.length,
+            ready: recipesData.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+            almostReady: recipesData.filter(r => {
+              const mp = Math.round(Number(r.matchPercentage) || 0);
+              return mp >= 75 && mp < 100;
+            }).length
+          },
+          isLoading: false
+        });
+      }
     } catch (error) {
       console.error('Error loading recipes:', error);
       this.setState({ isLoading: false });
@@ -278,30 +362,47 @@ class RecipeList extends Component {
   }
 
   async preloadRecipeIngredients(recipes) {
-    // Pre-fetch ingredients for all recipes in parallel (with limit to avoid too many requests)
-    const recipesToLoad = recipes.slice(0, 50); // Limit to first 50 recipes
-    const ingredientPromises = recipesToLoad.map(recipe => 
-      this.getRecipeIngredients(recipe.id).catch(() => [])
-    );
-    await Promise.all(ingredientPromises);
+    // Pre-fetch ingredients for recipes with throttling to avoid rate limiting (40 calls/min max)
+    // Process in batches of 5 with shorter delays - runs in background, non-blocking
+    const recipesToLoad = recipes.slice(0, 20); // Reduced from 50 to 20 to speed up initial load
+    const batchSize = 5; // Smaller batches for better responsiveness
+    const delayBetweenBatches = 1500; // Reduced from 2000ms to 1500ms
+    
+    // Process batches with yield points to allow UI updates
+    for (let i = 0; i < recipesToLoad.length; i += batchSize) {
+      const batch = recipesToLoad.slice(i, i + batchSize);
+      const ingredientPromises = batch.map(recipe => 
+        this.getRecipeIngredients(recipe.id).catch(() => [])
+      );
+      
+      // Don't await - let it run in background
+      Promise.all(ingredientPromises).catch(() => {});
+      
+      // Yield to UI thread between batches
+      if (i + batchSize < recipesToLoad.length) {
+        await new Promise(resolve => {
+          // Use requestAnimationFrame to ensure UI can update
+          requestAnimationFrame(() => {
+            setTimeout(resolve, delayBetweenBatches);
+          });
+        });
+      }
+    }
   }
 
   async setupAvailableIngredients() {
     try {
-      const userId = 1; // Default user ID
-
-      // Fetch pantry from Flask backend via helper
-      const pantryData = await getPantry(userId);
-      const ingredientNames = pantryData.map(item => item.Name.toLowerCase());
-      this.recipeService.setAvailableIngredients(ingredientNames);
+      // Use cached pantry data to avoid duplicate API calls
+      const pantryData = await this.getPantryData();
+      this.availableIngredients = pantryData.map(item => item.Name.toLowerCase());
     } catch (error) {
       console.error('Error loading pantry data for ingredients:', error);
-      const mockIngredients = [
+      // Fallback mock ingredients if API fails
+      this.availableIngredients = [
         'egg', 'cheese', 'butter', 'salt', 'black_pepper', 'garlic', 'onion', 
         'carrot', 'olive_oil', 'soy_sauce', 'chicken_breast', 'bell_pepper',
         'broccoli', 'canned_tuna', 'mayonnaise', 'bread_slice'
       ];
-      this.recipeService.setAvailableIngredients(mockIngredients);
     }
   }
 
@@ -362,29 +463,45 @@ class RecipeList extends Component {
         this.setState({ isLoading: true, isSearchMode: true });
         const searchResults = await searchRecipes(query);
         
-        // Transform search results to match our recipe format
-        const transformedRecipes = await Promise.all(searchResults.map(async (recipe) => {
-          // Get ingredients for match percentage calculation
-          const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
+        // Transform search results to match our recipe format with throttling
+        // Process in batches to avoid rate limiting
+        const batchSize = 10;
+        const delayBetweenBatches = 2000; // 2 seconds between batches
+        const transformedRecipes = [];
+        
+        for (let i = 0; i < searchResults.length; i += batchSize) {
+          const batch = searchResults.slice(i, i + batchSize);
+          const batchPromises = batch.map(async (recipe) => {
+            // Get ingredients for match percentage calculation
+            const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
+            
+            // Calculate match percentage and missing ingredients based on pantry
+            const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
+            const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
+            
+            return {
+              id: recipe.RecipeID,
+              title: recipe.Title,
+              time_minutes: recipe.TimeMinutes,
+              servings: recipe.Servings,
+              calories_per_serving: recipe.CaloriesPerServing,
+              imageURL: recipe.ImageURL || null,
+              matchPercentage: matchPercentage,
+              totalIngredients: ingredients.length,
+              ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
+              missingIngredients: missingIngredients,
+              tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
+            };
+          });
           
-          // Calculate match percentage and missing ingredients based on pantry
-          const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
-          const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
+          const batchResults = await Promise.all(batchPromises);
+          transformedRecipes.push(...batchResults);
           
-          return {
-            id: recipe.RecipeID,
-            title: recipe.Title,
-            time_minutes: recipe.TimeMinutes,
-            servings: recipe.Servings,
-            calories_per_serving: recipe.CaloriesPerServing,
-            imageURL: recipe.ImageURL || null,
-            matchPercentage: matchPercentage,
-            totalIngredients: ingredients.length,
-            ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
-            missingIngredients: missingIngredients,
-            tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
-          };
-        }));
+          // Wait before next batch (except for the last batch)
+          if (i + batchSize < searchResults.length) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+          }
+        }
 
         // Sort by match percentage (descending) before filtering
         transformedRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));

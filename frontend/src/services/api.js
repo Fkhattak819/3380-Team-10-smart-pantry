@@ -1,8 +1,6 @@
-// Centralized API helper so the frontend talks to the remote backend (ngrok).
-// It prefers VITE_API_URL if set, otherwise uses the provided ngrok host.
+// API helper for talking to backend
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://epistemic-postnasal-reid.ngrok-free.dev/api';
 
-// --- HELPER: HEADERS ---
 function getHeaders() {
   return {
     'Content-Type': 'application/json',
@@ -11,7 +9,6 @@ function getHeaders() {
   };
 }
 
-// --- HELPER: RESPONSE HANDLER ---
 async function handleResponse(response) {
   if (!response.ok) {
     // try parse json error, fallback to text
@@ -138,19 +135,61 @@ export async function saveUserPreferences(userId, diets) {
 // --- AUTH API FUNCTIONS ---
 
 export async function login(username, password) {
-  const response = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ username, password })
-  });
-  return handleResponse(response);
+  try {
+    const response = await fetch(`${BASE_URL}/users/login`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ username, password })
+    });
+    
+    // Handle non-OK responses by returning error object instead of throwing
+    if (!response.ok) {
+      let errorMessage = `Request failed with status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // If response is not JSON (e.g., HTML 404 page), use status message
+        if (response.status === 404) {
+          errorMessage = 'Endpoint not found. Make sure the backend has the latest code with auth routes.';
+        }
+      }
+      return { error: errorMessage };
+    }
+    
+    return handleResponse(response);
+  } catch (error) {
+    // Network errors or fetch failures
+    return { error: error.message || 'Connection failed. Make sure the backend is accessible.' };
+  }
 }
 
 export async function signup(username, password) {
-  const response = await fetch(`${BASE_URL}/auth/signup`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ username, password })
-  });
-  return handleResponse(response);
+  try {
+    const response = await fetch(`${BASE_URL}/users/register`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ username, password })
+    });
+    
+    // Handle non-OK responses by returning error object instead of throwing
+    if (!response.ok) {
+      let errorMessage = `Request failed with status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // If response is not JSON (e.g., HTML 404 page), use status message
+        if (response.status === 404) {
+          errorMessage = 'Endpoint not found. Make sure the backend has the latest code with auth routes.';
+        }
+      }
+      return { error: errorMessage };
+    }
+    
+    return handleResponse(response);
+  } catch (error) {
+    // Network errors or fetch failures
+    return { error: error.message || 'Connection failed. Make sure the backend is accessible.' };
+  }
 }

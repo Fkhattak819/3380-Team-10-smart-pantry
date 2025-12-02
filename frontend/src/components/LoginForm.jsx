@@ -1,5 +1,4 @@
 import { useState } from "react"
-import "./auth.css";
 import { authService } from "../services/authService";
 
 const LoginForm = ({ onLoginSuccess }) => {
@@ -38,13 +37,17 @@ const LoginForm = ({ onLoginSuccess }) => {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h1>{mode === "login" ? "Login" : "Sign Up"}</h1>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="bg-white rounded-xl shadow-lg p-12 w-full max-w-lg">
+        <h1 className="text-4xl font-bold text-slate-900 text-center mb-10">
+          {mode === "login" ? "Login" : "Sign Up"}
+        </h1>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="username" className="block text-base font-medium text-slate-700 mb-3">
+              Username
+            </label>
             <input
               id="username"
               type="text"
@@ -52,11 +55,14 @@ const LoginForm = ({ onLoginSuccess }) => {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="At least 5 characters"
               disabled={loading}
+              className="w-full px-5 py-3.5 border border-slate-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed transition-colors"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <div>
+            <label htmlFor="password" className="block text-base font-medium text-slate-700 mb-3">
+              Password
+            </label>
             <input
               id="password"
               type="password"
@@ -64,18 +70,27 @@ const LoginForm = ({ onLoginSuccess }) => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 5 characters"
               disabled={loading}
+              className="w-full px-5 py-3.5 border border-slate-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed transition-colors"
             />
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-5 py-4 rounded text-base">
+              {error}
+            </div>
+          )}
 
-          <button type="submit" disabled={loading}>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full px-5 py-4 bg-emerald-500 text-white rounded-xl font-semibold text-base hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
             {loading ? "Loading..." : mode === "login" ? "Login" : "Sign Up"}
           </button>
         </form>
 
-        <div className="toggle-mode">
-          <p>
+        <div className="mt-8 pt-8 border-t border-slate-200 text-center">
+          <p className="text-base text-slate-600">
             {mode === "login" ? "Don't have an account?" : "Already have an account?"}
             <button
               type="button"
@@ -85,6 +100,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                 setUsername("")
                 setPassword("")
               }}
+              className="ml-2 text-emerald-600 font-semibold hover:text-emerald-700 hover:underline"
             >
               {mode === "login" ? "Sign Up" : "Login"}
             </button>

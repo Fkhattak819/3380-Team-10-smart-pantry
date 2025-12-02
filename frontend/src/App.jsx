@@ -41,8 +41,11 @@ class App extends Component {
     const wasOpen = prevState.isSettingsOpen || prevState.isCartOpen;
     const isOpen = this.state.isSettingsOpen || this.state.isCartOpen;
 
+    // Use requestAnimationFrame to prevent blocking UI when toggling panels
     if (wasOpen !== isOpen) {
-      document.body.style.overflow = isOpen ? 'hidden' : '';
+      requestAnimationFrame(() => {
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+      });
     }
   }
 
@@ -61,7 +64,10 @@ class App extends Component {
   };
 
   handleTabChange = (tab) => {
-    this.setState({ activeTab: tab, isSettingsOpen: false, isCartOpen: false });
+    // Use requestAnimationFrame to prevent blocking UI during tab switch
+    requestAnimationFrame(() => {
+      this.setState({ activeTab: tab, isSettingsOpen: false, isCartOpen: false });
+    });
   };
 
   toggleSettings = () => {
@@ -123,55 +129,66 @@ class App extends Component {
   }
 
   render() {
-    const { user, isLoading, activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
+    try {
+      const { user, isLoading, activeTab, isOnline, isSettingsOpen, isCartOpen, cart } = this.state;
 
-    if (isLoading) {
-      return <div style={{ textAlign: 'center', padding: '50px' }}>Loading...</div>
-    }
+      if (isLoading) {
+        return <div style={{ textAlign: 'center', padding: '50px' }}>Loading...</div>
+      }
 
-    if (!user) {
-      return <LoginForm onLoginSuccess={this.handleLoginSuccess} />
-    }
+      if (!user) {
+        return <LoginForm onLoginSuccess={this.handleLoginSuccess} />
+      }
 
-    return (
-      <div className="App min-h-screen bg-gray-100">
-        <Header 
-          isSettingsOpen={isSettingsOpen} 
-          toggleSettings={this.toggleSettings}
-          // Pass cart state and handlers to Header
-          cartCount={cart.length}
-          onOpenCart={this.handleOpenCart}
-        />
-        <div className="container mx-auto px-4 py-8">
-          <Navigation 
-            activeTab={activeTab}
-            onTabChange={this.handleTabChange}
+      return (
+        <div className="App min-h-screen bg-gray-100">
+          <Header 
+            isSettingsOpen={isSettingsOpen} 
+            toggleSettings={this.toggleSettings}
+            // Pass cart state and handlers to Header
+            cartCount={cart.length}
+            onOpenCart={this.handleOpenCart}
           />
-          {this.renderContent()}
-        </div>
-        
-        <SettingsPanel 
-          isOpen={isSettingsOpen} 
-          onClose={this.toggleSettings}
-          onLogout={this.handleLogout}
-        />
-        
-        {/* Render the Cart Modal */}
-        <CartModal
-          isOpen={isCartOpen}
-          cart={cart}
-          onClose={this.handleCloseCart}
-          onRemoveItem={this.handleRemoveCartItem}
-          onClearCart={this.handleClearCart}
-        />
-        
-        {!isOnline && (
-          <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-            Warning: You're offline
+          <div className="container mx-auto px-4 py-8">
+            <Navigation 
+              activeTab={activeTab}
+              onTabChange={this.handleTabChange}
+            />
+            {this.renderContent()}
           </div>
-        )}
-      </div>
-    );
+          
+          <SettingsPanel 
+            isOpen={isSettingsOpen} 
+            onClose={this.toggleSettings}
+            onLogout={this.handleLogout}
+          />
+          
+          {/* Render the Cart Modal */}
+          <CartModal
+            isOpen={isCartOpen}
+            cart={cart}
+            onClose={this.handleCloseCart}
+            onRemoveItem={this.handleRemoveCartItem}
+            onClearCart={this.handleClearCart}
+          />
+          
+          {!isOnline && (
+            <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+              Warning: You're offline
+            </div>
+          )}
+        </div>
+      );
+    } catch (error) {
+      console.error('Error in App render:', error);
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <h2>Something went wrong</h2>
+          <p>{error.message}</p>
+          <button onClick={() => window.location.reload()}>Reload Page</button>
+        </div>
+      );
+    }
   }
 }
 

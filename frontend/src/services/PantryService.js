@@ -1,16 +1,12 @@
 import { PantryItem } from '../models/PantryItem.js';
 
-/**
- * PantryService class manages the pantry inventory
- * Follows object-oriented design with proper encapsulation
- */
+// PantryService manages the pantry inventory
 export class PantryService {
   constructor() {
     this._items = new Map();
     this._nextId = 1;
   }
 
-  // Getters
   get items() {
     return Array.from(this._items.values());
   }
@@ -18,8 +14,6 @@ export class PantryService {
   get totalItems() {
     return this._items.size;
   }
-
-  // Core business methods
   addItem(name, quantity = 1, unit = '') {
     if (!name) {
       throw new Error('Name is required');
