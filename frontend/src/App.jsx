@@ -87,17 +87,19 @@ class App extends Component {
   };
   
   handleAddToCart = (ingredientName) => {
-    // FIX: Check if the ingredient already exists before adding it
-    this.setState(prevState => {
-      if (prevState.cart.includes(ingredientName)) {
-        return null; // Return null to prevent the state update
-      }
-      
-      // If unique, add it to the cart
-      return {
-        cart: [...prevState.cart, ingredientName]
-      };
-    });
+    // Check if the ingredient already exists before adding it
+    const wasAlreadyInCart = this.state.cart.includes(ingredientName);
+    
+    if (wasAlreadyInCart) {
+      return false; // Already in cart, return false
+    }
+    
+    // If unique, add it to the cart
+    this.setState(prevState => ({
+      cart: [...prevState.cart, ingredientName]
+    }));
+    
+    return true; // Successfully added, return true
   };
 
   handleRemoveCartItem = (ingredientName) => {
