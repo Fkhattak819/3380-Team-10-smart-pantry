@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { authService } from "../services/authService";
 import SmartPantryImage from "../assets/SmartPantry.png";
-import FruitPatternImage from "../assets/fruitpattern.png";
 
 const LoginForm = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState("login") // 'login' or 'signup'
@@ -61,14 +60,14 @@ const LoginForm = ({ onLoginSuccess }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-2">
-                Email address
+                Username
               </label>
               <input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Enter your username"
                 disabled={loading}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 disabled:bg-slate-100 disabled:cursor-not-allowed transition-colors"
               />
@@ -124,23 +123,8 @@ const LoginForm = ({ onLoginSuccess }) => {
         </div>
       </div>
 
-      {/* Right Half - Fruit Pattern Overlay */}
-      <div className="hidden lg:flex lg:w-1/2 bg-green-400 relative overflow-hidden">
-        {/* Fruit Pattern Background Overlay - stretched to cover entire area */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${FruitPatternImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.8
-          }}
-        ></div>
-        
-        {/* Semi-transparent green overlay to maintain green tint */}
-        <div className="absolute inset-0 bg-green-400/30 z-0"></div>
-        
+      {/* Right Half - Green to White Gradient Background */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-l from-green-400 to-white relative overflow-hidden">
         {/* Main Image - Peeking from bottom right corner like reference image */}
         <img 
           src={SmartPantryImage} 

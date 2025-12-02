@@ -271,7 +271,7 @@ class InventoryList extends Component {
                       onClick={() => this.handleSelectIngredient(ingredient)}
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0"
                     >
-                      <div className="font-medium">{ingredient.Name}</div>
+                      <div className="font-medium">{this.formatDisplayName(ingredient.Name)}</div>
                       <div className="text-sm text-gray-500">Unit: {ingredient.DefaultUnit || 'N/A'}</div>
                     </div>
                   ))}
