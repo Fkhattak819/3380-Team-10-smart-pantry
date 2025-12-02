@@ -116,7 +116,9 @@ class InventoryList extends Component {
       
       if (value && value.length >= 2) {
         try {
-          const suggestions = await searchIngredients(value);
+          // Convert spaces to underscores for search (database uses underscores)
+          const searchQuery = value.replace(/\s+/g, '_');
+          const suggestions = await searchIngredients(searchQuery);
           this.setState({
             ingredientSuggestions: suggestions || [],
             showSuggestions: true

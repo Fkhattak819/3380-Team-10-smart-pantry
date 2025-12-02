@@ -36,11 +36,32 @@ class RecipeModal extends Component {
           <div className="p-6" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
             <h3 className="text-lg font-medium text-gray-700 mb-3">Ingredients</h3>
             <ul className="list-disc list-inside space-y-1 text-gray-600 mb-4">
-              {recipe.ingredients.map((ing, index) => (
-                <li key={index}>
-                  {ing.qty} {ing.unit} {ing.name.replace(/_/g, ' ')}
-                </li>
-              ))}
+              {recipe.ingredients.map((ing, index) => {
+                // Handle text-based quantities like "a pinch of" or "to taste"
+                const qty = ing.qty || ing.Quantity || '';
+                const unit = ing.unit || ing.Unit || '';
+                const name = ing.name || ing.Name || '';
+                
+                // Check if quantity is a number or text
+                const qtyNum = parseFloat(qty);
+                const isNumeric = !isNaN(qtyNum) && qtyNum > 0;
+                
+                // Format display: if numeric, show "qty unit name", if text show "qty name" or just "name"
+                let displayText = '';
+                if (isNumeric) {
+                  displayText = `${qtyNum} ${unit} ${name.replace(/_/g, ' ')}`.trim();
+                } else if (qty && typeof qty === 'string' && qty.trim()) {
+                  // Text quantity like "a pinch of"
+                  displayText = `${qty} ${name.replace(/_/g, ' ')}`.trim();
+                } else {
+                  // No quantity, just show name
+                  displayText = name.replace(/_/g, ' ');
+                }
+                
+                return (
+                  <li key={index}>{displayText}</li>
+                );
+              })}
             </ul>
             
             <h3 className="text-lg font-medium text-gray-700 mb-3">Instructions</h3>
