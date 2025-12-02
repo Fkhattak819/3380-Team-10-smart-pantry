@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { addMissingToShoppingList } from '../services/api.js';
 import Notification from './Notification.jsx';
+import { HiClock, HiFire, HiUsers } from 'react-icons/hi';
 
 // Helper function to format time
 function formatTime(timeMinutes) {
@@ -259,15 +260,15 @@ class RecipeCard extends Component {
             {/* META ROW */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 mb-3">
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100">
-                ⏱ <span className="font-medium">{formatTime(recipe.time_minutes || recipe.timeMinutes)}</span>
+                <HiClock className="text-slate-600" /> <span className="font-medium">{formatTime(recipe.time_minutes || recipe.timeMinutes)}</span>
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100">
-                🔥 <span className="font-medium">
+                <HiFire className="text-slate-600" /> <span className="font-medium">
                   {recipe.calories_per_serving || recipe.caloriesPerServing || 0} cal
                 </span>
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100">
-                👥 <span className="font-medium">
+                <HiUsers className="text-slate-600" /> <span className="font-medium">
                   {recipe.servings || 0} serving{(recipe.servings || 0) === 1 ? '' : 's'}
                 </span>
               </span>
