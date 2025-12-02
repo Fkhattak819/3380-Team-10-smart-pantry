@@ -25,8 +25,13 @@ class RecipeList extends Component {
         almostReady: 0
       },
       selectedRecipe: null,
-      isSearchMode: false, // Track if we're in search mode
+      isSearchMode: false,
+
+      // NEW:
+      recipeSuggestions: [],
+      showSuggestions: false,
     };
+
   }
 
   componentDidMount() {
@@ -447,101 +452,52 @@ class RecipeList extends Component {
   };
 
   handleSearchChange = async (e) => {
-    const query = e.target.value.trim();
-    const { filters } = this.props;
-    const hasFilters = filters && (
-      filters.selectedDiet || 
-      (filters.selectedAllergens && filters.selectedAllergens.length > 0) ||
-      filters.maxPrepTime !== 60 ||
-      filters.minCalories !== null ||
-      filters.maxCalories !== null
-    );
+    const query = e.target.value;
+    this.setState({ searchQuery: query });
 
-    if (query.length > 0) {
-      // User is typing - use search API to get all matching recipes
+    if (query && query.length >= 2) {
       try {
-        this.setState({ isLoading: true, isSearchMode: true });
-        const searchResults = await searchRecipes(query);
-        
-        // Transform search results to match our recipe format with throttling
-        // Process in batches to avoid rate limiting
-        const batchSize = 10;
-        const delayBetweenBatches = 2000; // 2 seconds between batches
-        const transformedRecipes = [];
-        
-        for (let i = 0; i < searchResults.length; i += batchSize) {
-          const batch = searchResults.slice(i, i + batchSize);
-          const batchPromises = batch.map(async (recipe) => {
-            // Get ingredients for match percentage calculation
-            const ingredients = await this.getRecipeIngredients(recipe.RecipeID);
-            
-            // Calculate match percentage and missing ingredients based on pantry
-            const matchPercentage = await this.calculateMatchPercentage(recipe.RecipeID, ingredients);
-            const missingIngredients = await this.calculateMissingIngredients(recipe.RecipeID, ingredients);
-            
-            return {
-              id: recipe.RecipeID,
-              title: recipe.Title,
-              time_minutes: recipe.TimeMinutes,
-              servings: recipe.Servings,
-              calories_per_serving: recipe.CaloriesPerServing,
-              imageURL: recipe.ImageURL || null,
-              matchPercentage: matchPercentage,
-              totalIngredients: ingredients.length,
-              ingredientsUserHas: Math.round(matchPercentage * ingredients.length / 100),
-              missingIngredients: missingIngredients,
-              tags: recipe.Tags ? recipe.Tags.split(',').map(t => t.trim()) : []
-            };
-          });
-          
-          const batchResults = await Promise.all(batchPromises);
-          transformedRecipes.push(...batchResults);
-          
-          // Wait before next batch (except for the last batch)
-          if (i + batchSize < searchResults.length) {
-            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-          }
-        }
+        // Light search for suggestions only
+        const results = await searchRecipes(query);
 
-        // Sort by match percentage (descending) before filtering
-        transformedRecipes.sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
-
-        // When searching, show ALL matching recipes (don't limit to 10)
-        // Apply filters if any, but still show all filtered results
-        let filtered = transformedRecipes;
-        if (hasFilters) {
-          filtered = await this.applyFilters(transformedRecipes);
-        }
-        
-        // Note: For search, we show all results. For non-search, we limit to top 10.
-
-        this.setState({ 
-          searchQuery: query,
-          recipes: transformedRecipes,
-          filteredRecipes: filtered,
-          filterCounts: {
-            all: transformedRecipes.length,
-            ready: transformedRecipes.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
-            almostReady: transformedRecipes.filter(r => {
-              const mp = Math.round(Number(r.matchPercentage) || 0);
-              return mp >= 75 && mp < 100;
-            }).length
-          },
-          isLoading: false
+        this.setState({
+          recipeSuggestions: (results || []).slice(0, 10), // cap suggestions
+          showSuggestions: true,
         });
       } catch (error) {
-        console.error('Error searching recipes:', error);
-        this.setState({ isLoading: false });
+        console.error('Error searching recipes for suggestions:', error);
+        this.setState({
+          recipeSuggestions: [],
+          showSuggestions: false,
+        });
       }
     } else {
-      // User cleared search - reload recipes normally
-      this.setState({ 
-        searchQuery: '',
-        isSearchMode: false,
-        isLoading: true
+      // Too short / cleared
+      this.setState({
+        recipeSuggestions: [],
+        showSuggestions: false,
       });
-      await this.loadRecipes();
     }
+  };
+
+handleSelectRecipeSuggestion = (recipe) => {
+  this.setState({
+    searchQuery: recipe.Title,
+    showSuggestions: false,
+    recipeSuggestions: [],
+  });
+
+  // Minimal recipe object for handleViewRecipe
+  const basicRecipe = {
+    id: recipe.RecipeID,
+    title: recipe.Title,
+    time_minutes: recipe.TimeMinutes,
+    servings: recipe.Servings,
+    calories_per_serving: recipe.CaloriesPerServing,
+    imageURL: recipe.ImageURL || null,
+  };
+
+  this.handleViewRecipe(basicRecipe);
   };
 
   async getCurrentFilteredRecipes() {
@@ -577,12 +533,10 @@ class RecipeList extends Component {
   }
 
   applySearchFilter(recipes, query = this.state.searchQuery) {
-    if (!query.trim()) return recipes;
-    const lowerQuery = query.toLowerCase();
-    return recipes.filter(recipe => 
-      recipe.title.toLowerCase().includes(lowerQuery)
-    );
+  // No-op now: keep cards unchanged, search is handled via suggestions
+  return recipes;
   }
+
 
   async getRecipeIngredients(recipeId) {
     // Check cache first
@@ -835,7 +789,7 @@ class RecipeList extends Component {
             </button>
           </div>
 
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <input
               type="text"
               placeholder="Search recipes..."
@@ -843,7 +797,44 @@ class RecipeList extends Component {
               onChange={this.handleSearchChange}
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
-          </div>
+          </div> */}
+
+          <div className="mb-6 relative">
+          <input
+            type="text"
+            placeholder="Search recipes (type to search)..."
+            value={searchQuery}
+            onChange={this.handleSearchChange}
+            onBlur={() => setTimeout(() => this.setState({ showSuggestions: false }), 200)}
+            onFocus={() => {
+              if (this.state.recipeSuggestions.length > 0) {
+                this.setState({ showSuggestions: true });
+              }
+            }}
+            className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          />
+
+          {this.state.showSuggestions && this.state.recipeSuggestions.length > 0 && (
+            <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-72 overflow-auto">
+              {this.state.recipeSuggestions.map((recipe) => (
+                <div
+                  key={recipe.RecipeID}
+                  onClick={() => this.handleSelectRecipeSuggestion(recipe)}
+                  className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0"
+                >
+                  <div className="font-medium text-slate-900">{recipe.Title}</div>
+                  <div className="text-xs text-slate-500">
+                    {recipe.TimeMinutes ? `${recipe.TimeMinutes} min` : 'Time N/A'}
+                    {recipe.CaloriesPerServing
+                      ? ` • ${recipe.CaloriesPerServing} kcal/serving`
+                      : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredRecipes.length === 0 ? (
