@@ -92,7 +92,7 @@ class RecipeList extends Component {
       
       // Check if all filters are reset to defaults (like on startup)
       const isResetToDefaults = filters && 
-        filters.maxPrepTime === 60 &&
+        filters.maxPrepTime === 300 &&
         !filters.selectedDiet &&
         (!filters.selectedAllergens || filters.selectedAllergens.length === 0) &&
         filters.minCalories === null &&
@@ -107,7 +107,7 @@ class RecipeList extends Component {
       );
       
       // Check if time filter is different from default
-      const hasTimeFilter = filters && filters.maxPrepTime !== 60;
+      const hasTimeFilter = filters && filters.maxPrepTime !== 300;
 
       // If reset to defaults and not in search mode, do a full reload (like on startup)
       if (isResetToDefaults && !this.state.isSearchMode && !this.state.searchQuery) {
@@ -145,7 +145,7 @@ class RecipeList extends Component {
       
       const { filters } = this.props;
       // Use search with empty query and prep time filter to get recipes matching time constraint
-      const maxTime = filters && filters.maxPrepTime !== 60 ? filters.maxPrepTime : null;
+      const maxTime = filters && filters.maxPrepTime !== 300 ? filters.maxPrepTime : null;
       const searchResults = await searchRecipes('', maxTime);
       
       // Transform and calculate match percentages and missing ingredients with throttling
@@ -291,7 +291,7 @@ class RecipeList extends Component {
       );
       
       // Check if time filter is different from default
-      const hasTimeFilter = filters && filters.maxPrepTime !== 60;
+      const hasTimeFilter = filters && filters.maxPrepTime !== 300;
 
       // If we have diet/allergen/calorie filters OR prep time filter, load more recipes for filtering
       // This ensures prep time filter searches all recipes, not just top 10

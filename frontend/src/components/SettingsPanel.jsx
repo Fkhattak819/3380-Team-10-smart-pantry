@@ -98,7 +98,7 @@ class SettingsPanel extends Component {
           
           this.setState({
             selectedDiet: selectedDiet || parsed.selectedDiet || '',
-            maxPrepTime: parsed.maxPrepTime || 60,
+            maxPrepTime: parsed.maxPrepTime || 300,
             minCalories: parsed.minCalories || '',
             maxCalories: parsed.maxCalories || '',
             selectedAllergens: parsed.selectedAllergens || defaultAllergens
@@ -221,7 +221,7 @@ class SettingsPanel extends Component {
     }, {});
     
     this.setState({
-      maxPrepTime: 60,
+      maxPrepTime: 300,
       selectedDiet: '',
       minCalories: '',
       maxCalories: '',
@@ -242,7 +242,7 @@ class SettingsPanel extends Component {
     
     if (onFilterChange) {
       onFilterChange({
-        maxPrepTime: 60,
+        maxPrepTime: 300,
         selectedDiet: '',
         minCalories: null,
         maxCalories: null,
@@ -366,7 +366,7 @@ class SettingsPanel extends Component {
                 min="5"
                 max="999"
                 step="5"
-                placeholder="60"
+                placeholder="300"
                 value={maxPrepTime}
                 onChange={this.handlePrepTimeChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-gray-800 mb-3" 

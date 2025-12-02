@@ -22,7 +22,7 @@ class App extends Component {
       cart: [], // Shopping cart for missing ingredients
       isCartOpen: false,
       recipeFilters: {
-        maxPrepTime: 60,
+        maxPrepTime: 300,
         selectedDiet: '',
         minCalories: null,
         maxCalories: null,
