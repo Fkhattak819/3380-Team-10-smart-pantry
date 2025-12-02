@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import logo from '../assets/SmartPantry.png';
 
 class Header extends Component {
   render() {
@@ -8,16 +9,22 @@ class Header extends Component {
 
     return (
       <header className="bg-white/90 backdrop-blur border-b border-slate-200">
+        {/* Match the same outer container as main content / recipe cards */}
         <div className="container mx-auto px-4 py-4">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center justify-between">
             {/* Brand */}
             <div className="flex items-center space-x-2">
-              <div className="h-9 w-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-xl">
-                SP
+              {/* Increased green box and logo sizes; kept spacing to preserve margins */}
+              <div className="h-12 w-12 rounded-xl bg-emerald-500 flex items-center justify-center overflow-hidden">
+                <img
+                  src={logo}
+                  alt="SmartPantry logo"
+                  className="h-10 w-10 rounded-md object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-emerald-600 leading-tight">
-                  SmartPantry
+                  KitchenSync
                 </h1>
                 <p className="text-xs text-slate-500">
                   Your intelligent meal planning companion
