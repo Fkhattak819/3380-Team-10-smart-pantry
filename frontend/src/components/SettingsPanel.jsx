@@ -264,6 +264,9 @@ class SettingsPanel extends Component {
         selectedAllergens: []
       });
     }
+    
+    // Reload the page to reset everything
+    window.location.reload();
   };
 
   render() {
