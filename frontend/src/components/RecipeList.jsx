@@ -480,24 +480,24 @@ class RecipeList extends Component {
     }
   };
 
-handleSelectRecipeSuggestion = (recipe) => {
-  this.setState({
-    searchQuery: recipe.Title,
-    showSuggestions: false,
-    recipeSuggestions: [],
-  });
+  handleSelectRecipeSuggestion = (recipe) => {
+    this.setState({
+      searchQuery: recipe.Title,
+      showSuggestions: false,
+      recipeSuggestions: [],
+    });
 
-  // Minimal recipe object for handleViewRecipe
-  const basicRecipe = {
-    id: recipe.RecipeID,
-    title: recipe.Title,
-    time_minutes: recipe.TimeMinutes,
-    servings: recipe.Servings,
-    calories_per_serving: recipe.CaloriesPerServing,
-    imageURL: recipe.ImageURL || null,
-  };
+    // Minimal recipe object for handleViewRecipe
+    const basicRecipe = {
+      id: recipe.RecipeID,
+      title: recipe.Title,
+      time_minutes: recipe.TimeMinutes,
+      servings: recipe.Servings,
+      calories_per_serving: recipe.CaloriesPerServing,
+      imageURL: recipe.ImageURL || null,
+    };
 
-  this.handleViewRecipe(basicRecipe);
+    this.handleViewRecipe(basicRecipe);
   };
 
   async getCurrentFilteredRecipes() {
