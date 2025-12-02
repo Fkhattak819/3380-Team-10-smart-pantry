@@ -21,23 +21,61 @@ class InventoryList extends Component {
   }
 
   componentDidMount() {
-    this.loadPantryData();
+    // Only load if userId is available, otherwise wait for componentDidUpdate
+    if (this.props.userId) {
+      this.loadPantryData();
+    }
   }
 
-  async loadPantryData() {
+  componentDidUpdate(prevProps) {
+    // If userId becomes available after mount, load the data
+    if (!prevProps.userId && this.props.userId) {
+      this.loadPantryData();
+    }
+  }
+
+  async loadPantryData(retryCount = 0) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 second delay between retries
+    
     try {
       this.setState({ isLoading: true, error: null });
-      console.log('Loading pantry data...');
+      console.log('Loading pantry data for userId:', this.props.userId, `(attempt ${retryCount + 1})`);
 
-      const userId = 1; // Default user ID - you can make this dynamic later
-      const pantryData = await getPantry(userId);
-      console.log('Received pantry data:', pantryData);
+      const userId = this.props.userId;
+      if (!userId) {
+        console.error('No userId provided');
+        this.setState({ isLoading: false, error: 'User not authenticated' });
+        return;
+      }
+      
+      let pantryData;
+      try {
+        pantryData = await getPantry(userId);
+        console.log('Received pantry data:', pantryData);
+      } catch (apiError) {
+        // If API returns 404 or empty response for new user, treat as empty pantry
+        if (apiError.message && (apiError.message.includes('404') || apiError.message.includes('not found'))) {
+          console.log('New user - no pantry data found, initializing empty pantry');
+          pantryData = [];
+        } else if (retryCount < MAX_RETRIES && (apiError.message.includes('500') || apiError.message.includes('Database'))) {
+          // Retry for database errors (user might still be initializing)
+          console.log(`Retrying pantry load (${retryCount + 1}/${MAX_RETRIES})...`);
+          setTimeout(() => {
+            this.loadPantryData(retryCount + 1);
+          }, RETRY_DELAY);
+          return;
+        } else {
+          throw apiError; // Re-throw if it's a different error or max retries reached
+        }
+      }
       
       this.pantryService.clearAll();
       
       // Transform API response to match PantryItem format
+      // Handle empty pantry (new user) - API may return empty array, null, or undefined
       if (Array.isArray(pantryData)) {
-      pantryData.forEach(item => {
+        pantryData.forEach(item => {
           try {
             // Add item with unit
             this.pantryService.addItem(
@@ -49,13 +87,20 @@ class InventoryList extends Component {
             console.error('Error processing item:', item, itemError);
           }
         });
+      } else if (pantryData === null || pantryData === undefined) {
+        // New user with empty pantry - API returns null/undefined
+        console.log('Empty pantry for new user - initializing with empty array');
+        pantryData = []; // Normalize to empty array
       } else {
         console.warn('Pantry data is not an array:', pantryData);
+        // Treat unexpected format as empty pantry
+        pantryData = [];
       }
       
+      // Always update items list and set loading to false, even for empty pantry
       this.updateItemsList();
-      this.setState({ isLoading: false });
-      console.log('Pantry data loaded successfully');
+      this.setState({ isLoading: false, error: null });
+      console.log('Pantry data loaded successfully. Items count:', this.pantryService.items.length);
     } catch (error) {
       console.error('Error loading pantry data:', error);
       console.error('Error stack:', error.stack);
@@ -117,7 +162,12 @@ class InventoryList extends Component {
   handleAddItem = async (e) => {
     e.preventDefault();
     const { name, quantity, unit } = this.state.newItem;
-    const userId = 1; // Default user ID - make dynamic later
+    const userId = this.props.userId;
+    
+    if (!userId) {
+      alert('User not authenticated');
+      return;
+    }
     
     // Validate input
     if (!name || !name.trim()) {
@@ -161,7 +211,11 @@ class InventoryList extends Component {
   };
 
   handleRemoveItem = async (item) => {
-    const userId = 1; // Default user ID - make dynamic later
+    const userId = this.props.userId;
+    if (!userId) {
+      alert('User not authenticated');
+      return;
+    }
     const ingredientName = item.name.toLowerCase().replace(/\s+/g, '_');
     
     try {

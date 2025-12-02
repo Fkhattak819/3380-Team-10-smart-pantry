@@ -15,13 +15,38 @@ const LoginForm = ({ onLoginSuccess }) => {
     setLoading(true)
 
     try {
-      // Use authService instead of duplicating fetch logic
-      const data = mode === "login" 
-        ? await authService.login(username, password)
-        : await authService.signup(username, password)
+      let data;
+      
+      if (mode === "signup") {
+        // For signup, first register the user
+        const signupData = await authService.signup(username, password)
+        
+        if (signupData.error) {
+          setError(signupData.error || "An error occurred")
+          setLoading(false)
+          return
+        }
+        
+        // After successful signup, automatically log in to get userId
+        // Add a small delay to allow backend to fully initialize the user
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Now log in to get the userId
+        data = await authService.login(username, password)
+        
+        if (data.error) {
+          setError(data.error || "Account created but login failed. Please try logging in.")
+          setLoading(false)
+          return
+        }
+      } else {
+        // For login, use normal flow
+        data = await authService.login(username, password)
+      }
 
       if (data.error) {
         setError(data.error || "An error occurred")
+        setLoading(false)
         return
       }
 
@@ -32,7 +57,6 @@ const LoginForm = ({ onLoginSuccess }) => {
       })
     } catch (err) {
       setError("Connection failed. Make sure the backend is accessible.")
-    } finally {
       setLoading(false)
     }
   }

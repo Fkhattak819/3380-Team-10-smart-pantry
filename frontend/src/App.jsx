@@ -21,6 +21,14 @@ class App extends Component {
       // Cart State
       cart: [], 
       isCartOpen: false,
+      // Recipe Filters State
+      recipeFilters: {
+        maxPrepTime: 60,
+        selectedDiet: '',
+        minCalories: null,
+        maxCalories: null,
+        selectedAllergens: []
+      }
     };
   }
 
@@ -118,15 +126,20 @@ class App extends Component {
     this.setState({ cart: [] });
   };
 
+  handleFilterChange = (filters) => {
+    this.setState({ recipeFilters: filters });
+  };
+
   renderContent() {
+    const userId = this.state.user?.userId;
     // Pass the handler down to RecipeList
     switch (this.state.activeTab) {
       case 'recipes':
-        return <RecipeList onAddToCart={this.handleAddToCart} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} userId={userId} filters={this.state.recipeFilters} />;
       case 'pantry':
-        return <InventoryList />;
+        return <InventoryList userId={userId} />;
       default:
-        return <RecipeList onAddToCart={this.handleAddToCart} />;
+        return <RecipeList onAddToCart={this.handleAddToCart} userId={userId} filters={this.state.recipeFilters} />;
     }
   }
 
@@ -163,6 +176,8 @@ class App extends Component {
             isOpen={isSettingsOpen} 
             onClose={this.toggleSettings}
             onLogout={this.handleLogout}
+            userId={this.state.user?.userId}
+            onFilterChange={this.handleFilterChange}
           />
           
           {/* Render the Cart Modal */}

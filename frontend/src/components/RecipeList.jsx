@@ -222,7 +222,11 @@ class RecipeList extends Component {
     }
 
     try {
-      const userId = 1;
+      const userId = this.props.userId;
+      if (!userId) {
+        console.error('No userId provided');
+        return this.pantryCache || [];
+      }
       const pantryData = await getPantry(userId);
       this.pantryCache = pantryData;
       this.pantryCacheTime = now;
@@ -274,7 +278,12 @@ class RecipeList extends Component {
 
   async loadRecipes() {
     try {
-      const userId = 1; // Default user ID - you can make this dynamic later
+      const userId = this.props.userId;
+      if (!userId) {
+        console.error('No userId provided');
+        this.setState({ isLoading: false });
+        return;
+      }
       const { filters } = this.props;
       
       // Check if we have filters other than just time
@@ -624,6 +633,38 @@ class RecipeList extends Component {
         exclude: ['meat', 'chicken', 'beef', 'pork', 'bacon', 'sausage', 'ham'],
         require: []
       },
+      'gluten_free': {
+        exclude: ['wheat', 'flour', 'bread', 'pasta', 'gluten', 'barley', 'rye', 'oats'],
+        require: []
+      },
+      'dairy_free': {
+        exclude: ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'yoghurt', 'dairy', 'whey', 'casein'],
+        require: []
+      },
+      'egg_free': {
+        exclude: ['egg', 'eggs', 'mayonnaise', 'mayo'],
+        require: []
+      },
+      'soy_free': {
+        exclude: ['soy', 'soya', 'soybean', 'tofu', 'tempeh', 'miso'],
+        require: []
+      },
+      'nut_free': {
+        exclude: ['peanut', 'peanuts', 'almond', 'almonds', 'walnut', 'walnuts', 'cashew', 'cashews', 'hazelnut', 'pistachio'],
+        require: []
+      },
+      'shellfish_free': {
+        exclude: ['shrimp', 'prawn', 'crab', 'lobster', 'scallop', 'mussel', 'oyster', 'shellfish', 'crustacean'],
+        require: []
+      },
+      'pork_free': {
+        exclude: ['pork', 'bacon', 'ham', 'sausage', 'prosciutto', 'pancetta'],
+        require: []
+      },
+      'beef_free': {
+        exclude: ['beef', 'steak', 'ground beef', 'hamburger'],
+        require: []
+      },
       'keto': {
         exclude: ['bread', 'pasta', 'rice', 'potato', 'potatoes', 'sugar', 'flour', 'wheat'],
         require: []
@@ -873,6 +914,7 @@ class RecipeList extends Component {
                     matchInfo={matchInfo}
                     onViewRecipe={this.handleViewRecipe}
                     onAddToCart={onAddToCart}
+                    userId={this.props.userId}
                   />
                 );
               })

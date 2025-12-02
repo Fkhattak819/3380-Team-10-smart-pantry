@@ -54,7 +54,16 @@ class RecipeCard extends Component {
     }
   
     try {
-      const userId = 1;
+      const userId = this.props.userId;
+      if (!userId) {
+        this.setState({ 
+          notification: { 
+            message: 'User not authenticated.', 
+            type: 'error' 
+          } 
+        });
+        return;
+      }
       const recipeId = recipe.id;
   
       const result = await addMissingToShoppingList(userId, recipeId);
