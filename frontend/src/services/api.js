@@ -1,5 +1,12 @@
 // API helper for talking to backend
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://epistemic-postnasal-reid.ngrok-free.dev/api';
+// VITE_API_URL should be set in environment variables (e.g., .env file)
+// Falls back to localhost for local development only
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+if (!import.meta.env.VITE_API_URL) {
+  console.warn('⚠️  VITE_API_URL not set. Using localhost fallback. Set VITE_API_URL in .env for production.');
+} else {
+  console.log('✅ Using API URL:', BASE_URL);
+}
 
 function getHeaders() {
   return {
@@ -20,10 +27,14 @@ async function handleResponse(response) {
   }
   // Attempt to parse JSON, but return null if no body
   const text = await response.text().catch(() => '');
+  console.log('📦 Response text:', text);
   if (!text) return null;
   try {
-    return JSON.parse(text);
-  } catch {
+    const parsed = JSON.parse(text);
+    console.log('✅ Parsed JSON:', parsed);
+    return parsed;
+  } catch (e) {
+    console.log('⚠️ Failed to parse JSON, returning text:', text);
     return text;
   }
 }
@@ -136,18 +147,24 @@ export async function saveUserPreferences(userId, diets) {
 
 export async function login(username, password) {
   try {
-    const response = await fetch(`${BASE_URL}/users/login`, {
+    const url = `${BASE_URL}/users/login`;
+    console.log('🔐 Attempting login to:', url);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ username, password })
     });
+    
+    console.log('📡 Login response status:', response.status, response.statusText);
     
     // Handle non-OK responses by returning error object instead of throwing
     if (!response.ok) {
       let errorMessage = `Request failed with status ${response.status}`;
       try {
         const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
+        console.log('❌ Login error response:', errorData);
+        errorMessage = errorData.error || errorData.message || errorMessage;
       } catch {
         // If response is not JSON (e.g., HTML 404 page), use status message
         if (response.status === 404) {
@@ -157,9 +174,12 @@ export async function login(username, password) {
       return { error: errorMessage };
     }
     
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    console.log('✅ Login success response:', result);
+    return result;
   } catch (error) {
     // Network errors or fetch failures
+    console.error('💥 Login network error:', error);
     return { error: error.message || 'Connection failed. Make sure the backend is accessible.' };
   }
 }

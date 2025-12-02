@@ -41,20 +41,30 @@ const LoginForm = ({ onLoginSuccess }) => {
         }
       } else {
         // For login, use normal flow
+        console.log('🔑 Attempting manual login for:', username);
         data = await authService.login(username, password)
+        console.log('🔑 Manual login result:', data);
       }
 
       if (data.error) {
+        console.error('❌ Login error:', data.error);
         setError(data.error || "An error occurred")
         setLoading(false)
         return
       }
 
+      // Debug: log the response to see what we're getting
+      console.log('✅ Login success - full response:', data);
+
       // Success - call the callback with user data
-      onLoginSuccess({
-        userId: data.userId,
-        username: data.username,
-      })
+      // Handle different possible response formats from backend
+      // Backend returns: { message: "Login successful", userId: X, username: "..." }
+      const userData = {
+        userId: data.userId || data.user_id || data.id,
+        username: data.username || data.userName || username,
+      };
+      console.log('👤 Calling onLoginSuccess with:', userData);
+      onLoginSuccess(userData)
     } catch (err) {
       setError("Connection failed. Make sure the backend is accessible.")
       setLoading(false)
