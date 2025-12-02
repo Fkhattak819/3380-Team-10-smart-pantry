@@ -53,9 +53,10 @@ export class PantryService {
 
   // Search and filter methods
   searchItems(query) {
-    const lowerQuery = query.toLowerCase();
+    // Convert spaces to underscores for search (items stored with underscores)
+    const normalizedQuery = query.toLowerCase().replace(/\s+/g, '_');
     return this.items.filter(item => 
-      item.name.toLowerCase().includes(lowerQuery)
+      item.name.toLowerCase().includes(normalizedQuery)
     );
   }
 

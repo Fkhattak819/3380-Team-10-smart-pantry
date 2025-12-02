@@ -105,20 +105,33 @@ class RecipeList extends Component {
         filters.minCalories !== null ||
         filters.maxCalories !== null
       );
+      
+      // Check if time filter is different from default
+      const hasTimeFilter = filters && filters.maxPrepTime !== 60;
 
       // If reset to defaults and not in search mode, do a full reload (like on startup)
       if (isResetToDefaults && !this.state.isSearchMode && !this.state.searchQuery) {
         this.loadRecipes();
       }
-      // If we have diet/allergen/calorie filters and we're not in search mode, load more recipes
-      else if (hasDietOrAllergenFilters && !this.state.isSearchMode && !this.state.searchQuery) {
+      // If we have diet/allergen/calorie filters OR prep time filter, load more recipes
+      // This ensures prep time filter searches all recipes, not just top 10
+      else if ((hasDietOrAllergenFilters || hasTimeFilter) && !this.state.isSearchMode && !this.state.searchQuery) {
         this.loadRecipesForFiltering();
       } else {
         this.getCurrentFilteredRecipes().then(currentFiltered => {
           // Always limit to top 10 by match percentage
           const top10Filtered = currentFiltered.slice(0, 10);
+          const finalFiltered = this.applySearchFilter(top10Filtered);
           this.setState({
-            filteredRecipes: this.applySearchFilter(top10Filtered)
+            filteredRecipes: finalFiltered,
+            filterCounts: {
+              all: finalFiltered.length,
+              ready: finalFiltered.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+              almostReady: finalFiltered.filter(r => {
+                const mp = Math.round(Number(r.matchPercentage) || 0);
+                return mp >= 75 && mp < 100;
+              }).length
+            }
           });
         });
       }
@@ -130,8 +143,10 @@ class RecipeList extends Component {
     try {
       this.setState({ isLoading: true });
       
-      // Use search with empty query to get up to 50 recipes
-      const searchResults = await searchRecipes('');
+      const { filters } = this.props;
+      // Use search with empty query and prep time filter to get recipes matching time constraint
+      const maxTime = filters && filters.maxPrepTime !== 60 ? filters.maxPrepTime : null;
+      const searchResults = await searchRecipes('', maxTime);
       
       // Transform and calculate match percentages and missing ingredients with throttling
       // Process in batches to avoid rate limiting
@@ -182,9 +197,9 @@ class RecipeList extends Component {
         recipes: transformedRecipes,
         filteredRecipes: top10Filtered,
         filterCounts: {
-          all: transformedRecipes.length,
-          ready: transformedRecipes.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
-          almostReady: transformedRecipes.filter(r => {
+          all: top10Filtered.length,
+          ready: top10Filtered.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+          almostReady: top10Filtered.filter(r => {
             const mp = Math.round(Number(r.matchPercentage) || 0);
             return mp >= 75 && mp < 100;
           }).length
@@ -278,14 +293,14 @@ class RecipeList extends Component {
       // Check if time filter is different from default
       const hasTimeFilter = filters && filters.maxPrepTime !== 60;
 
-      // If we have diet/allergen/calorie filters, load more recipes for filtering
-      // If only time filter, still use normal matches but apply time filter
-      if (hasDietOrAllergenFilters) {
+      // If we have diet/allergen/calorie filters OR prep time filter, load more recipes for filtering
+      // This ensures prep time filter searches all recipes, not just top 10
+      if (hasDietOrAllergenFilters || hasTimeFilter) {
         await this.loadRecipesForFiltering();
         return;
       }
 
-      // If only time filter or no filters, use normal recipe matches (top 10 by match percentage)
+      // If no filters, use normal recipe matches (top 10 by match percentage)
       const matchesData = await getRecipeMatches(userId);
 
       // Transform API response to match Recipe model format
@@ -335,13 +350,14 @@ class RecipeList extends Component {
       
       // Store recipes with match info - only update if component is still mounted
       if (this._isMounted) {
+        const finalFiltered = this.applySearchFilter(filteredRecipes);
         this.setState({
           recipes: recipesData,
-          filteredRecipes: this.applySearchFilter(filteredRecipes),
+          filteredRecipes: finalFiltered,
           filterCounts: {
-            all: recipesData.length,
-            ready: recipesData.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
-            almostReady: recipesData.filter(r => {
+            all: finalFiltered.length,
+            ready: finalFiltered.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+            almostReady: finalFiltered.filter(r => {
               const mp = Math.round(Number(r.matchPercentage) || 0);
               return mp >= 75 && mp < 100;
             }).length
@@ -430,9 +446,19 @@ class RecipeList extends Component {
     // Always limit to top 10 by match percentage
     filteredRecipes = filteredRecipes.slice(0, 10);
 
+    const finalFiltered = this.applySearchFilter(filteredRecipes);
+
     this.setState({ 
       activeFilter: filter,
-      filteredRecipes: this.applySearchFilter(filteredRecipes)
+      filteredRecipes: finalFiltered,
+      filterCounts: {
+        all: finalFiltered.length,
+        ready: finalFiltered.filter(r => (Math.round(Number(r.matchPercentage) || 0) >= 100)).length,
+        almostReady: finalFiltered.filter(r => {
+          const mp = Math.round(Number(r.matchPercentage) || 0);
+          return mp >= 75 && mp < 100;
+        }).length
+      }
     });
   };
 
