@@ -3,15 +3,14 @@ import RecipeCard from './RecipeCard';
 import { getRecipeMatches, getPantry, getRecipeDetails, searchRecipes } from '../services/api.js';
 import RecipeModal from './RecipeModal';
 
-// Recipe list component
 class RecipeList extends Component {
   constructor(props) {
     super(props);
-    this.availableIngredients = []; // Store available ingredients from pantry
-    this.recipeIngredientsCache = {}; // Cache for recipe ingredients
-    this.allRecipesCache = null; // Cache for all recipes when filters are active
-    this._isMounted = false; // Track if component is mounted (use _ prefix to avoid conflicts)
-    this.loadTimeout = null; // Track pending loads to cancel if needed
+    this.availableIngredients = [];
+    this.recipeIngredientsCache = {};
+    this.allRecipesCache = null;
+    this._isMounted = false;
+    this.loadTimeout = null;
     
     this.state = {
       recipes: [],
@@ -38,14 +37,12 @@ class RecipeList extends Component {
     try {
       this._isMounted = true;
       
-      // Load recipes - defer to prevent blocking UI
       setTimeout(() => {
         if (this._isMounted) {
           Promise.allSettled([
             this.loadRecipes(),
             this.setupAvailableIngredients()
-          ]).catch(error => {
-            console.error('Error in componentDidMount:', error);
+          ]).catch(() => {
             if (this._isMounted) {
               this.setState({ isLoading: false });
             }
@@ -53,7 +50,6 @@ class RecipeList extends Component {
         }
       }, 0);
     } catch (error) {
-      console.error('Error in componentDidMount:', error);
       if (this._isMounted) {
         this.setState({ isLoading: false });
       }
@@ -70,19 +66,14 @@ class RecipeList extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    // Only process if filters prop actually exists and changed
-    // Skip if filters prop doesn't exist (prevents unnecessary processing)
     if (!this.props.filters && !prevProps.filters) {
-      return; // No filters, skip processing
+      return;
     }
     
-    // Quick reference check first - if same object reference, skip
     if (prevProps.filters === this.props.filters) {
-      return; // Same object reference, no change
+      return;
     }
     
-    // Re-apply filters when filters prop changes
-    // Deep comparison of filter values to detect changes
     const filtersChanged = 
       !prevProps.filters || 
       !this.props.filters ||
@@ -92,12 +83,10 @@ class RecipeList extends Component {
       prevProps.filters.maxCalories !== this.props.filters.maxCalories ||
       JSON.stringify(prevProps.filters.selectedAllergens || []) !== JSON.stringify(this.props.filters.selectedAllergens || []);
     
-    // Only process if filters actually changed
     if (!filtersChanged) {
       return;
     }
     
-    // Use setTimeout to defer heavy operations and prevent blocking UI
     setTimeout(() => {
       const { filters } = this.props;
       
@@ -137,7 +126,7 @@ class RecipeList extends Component {
   }
 
   async loadRecipesForFiltering() {
-    // Load more recipes when filters are active to ensure we can show 10 filtered results
+    // Load more recipes when filters active so we can show 10 results
     try {
       this.setState({ isLoading: true });
       
@@ -175,7 +164,6 @@ class RecipeList extends Component {
         const batchResults = await Promise.all(batchPromises);
         transformedRecipes.push(...batchResults);
         
-        // Wait before next batch (except for the last batch)
         if (i + batchSize < searchResults.length) {
           await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
         }
@@ -204,7 +192,6 @@ class RecipeList extends Component {
         isLoading: false
       });
     } catch (error) {
-      console.error('Error loading recipes for filtering:', error);
       this.setState({ isLoading: false });
     }
   }
@@ -215,7 +202,6 @@ class RecipeList extends Component {
   PANTRY_CACHE_DURATION = 60000; // 1 minute cache
 
   async getPantryData() {
-    // Use cached pantry data if available and fresh
     const now = Date.now();
     if (this.pantryCache && this.pantryCacheTime && (now - this.pantryCacheTime) < this.PANTRY_CACHE_DURATION) {
       return this.pantryCache;
@@ -224,7 +210,6 @@ class RecipeList extends Component {
     try {
       const userId = this.props.userId;
       if (!userId) {
-        console.error('No userId provided');
         return this.pantryCache || [];
       }
       const pantryData = await getPantry(userId);
@@ -232,8 +217,7 @@ class RecipeList extends Component {
       this.pantryCacheTime = now;
       return pantryData;
     } catch (error) {
-      console.error('Error fetching pantry:', error);
-      return this.pantryCache || []; // Return cached data if available, even if stale
+      return this.pantryCache || [];
     }
   }
 
@@ -251,7 +235,6 @@ class RecipeList extends Component {
       
       return Math.round((matchingIngredients.length / ingredients.length) * 100);
     } catch (error) {
-      console.error('Error calculating match percentage:', error);
       return 0;
     }
   }
@@ -271,7 +254,6 @@ class RecipeList extends Component {
       
       return missingIngredients.map(name => ({ name }));
     } catch (error) {
-      console.error('Error calculating missing ingredients:', error);
       return [];
     }
   }
@@ -280,7 +262,6 @@ class RecipeList extends Component {
     try {
       const userId = this.props.userId;
       if (!userId) {
-        console.error('No userId provided');
         this.setState({ isLoading: false });
         return;
       }
@@ -344,10 +325,9 @@ class RecipeList extends Component {
       
       // Show recipes immediately, load ingredients in background (non-blocking)
       // Pre-fetch ingredients for recipes in background to enable ingredient-based filtering
-      this.preloadRecipeIngredients(recipesData).catch(err => console.error('Error preloading ingredients:', err));
+      this.preloadRecipeIngredients(recipesData).catch(() => {});
       
       // Apply filters to initial recipes (if only time filter, this will just filter by time)
-      // Note: ingredient-based filters will work after ingredients are loaded
       let filteredRecipes = await this.applyFilters(recipesData);
       
       // Always limit to top 10 by match percentage after filtering
@@ -370,7 +350,6 @@ class RecipeList extends Component {
         });
       }
     } catch (error) {
-      console.error('Error loading recipes:', error);
       this.setState({ isLoading: false });
     }
   }
@@ -389,13 +368,12 @@ class RecipeList extends Component {
         this.getRecipeIngredients(recipe.id).catch(() => [])
       );
       
-      // Don't await - let it run in background
       Promise.all(ingredientPromises).catch(() => {});
       
       // Yield to UI thread between batches
       if (i + batchSize < recipesToLoad.length) {
         await new Promise(resolve => {
-          // Use requestAnimationFrame to ensure UI can update
+          // Use requestAnimationFrame so UI can update
           requestAnimationFrame(() => {
             setTimeout(resolve, delayBetweenBatches);
           });
@@ -410,8 +388,6 @@ class RecipeList extends Component {
       const pantryData = await this.getPantryData();
       this.availableIngredients = pantryData.map(item => item.Name.toLowerCase());
     } catch (error) {
-      console.error('Error loading pantry data for ingredients:', error);
-      // Fallback mock ingredients if API fails
       this.availableIngredients = [
         'egg', 'cheese', 'butter', 'salt', 'black_pepper', 'garlic', 'onion', 
         'carrot', 'olive_oil', 'soy_sauce', 'chicken_breast', 'bell_pepper',
@@ -474,7 +450,6 @@ class RecipeList extends Component {
           showSuggestions: true,
         });
       } catch (error) {
-        console.error('Error searching recipes for suggestions:', error);
         this.setState({
           recipeSuggestions: [],
           showSuggestions: false,
@@ -559,7 +534,6 @@ class RecipeList extends Component {
       this.recipeIngredientsCache[recipeId] = ingredients;
       return ingredients;
     } catch (error) {
-      console.error(`Error fetching ingredients for recipe ${recipeId}:`, error);
       return [];
     }
   }
@@ -743,7 +717,6 @@ class RecipeList extends Component {
 
   handleViewRecipe = async (recipe) => {
     try {
-      // Fetch full recipe details from API via helper
       const recipeDetails = await getRecipeDetails(recipe.id);
       
       // Transform API response to match Recipe model format
@@ -764,8 +737,6 @@ class RecipeList extends Component {
       
       this.setState({ selectedRecipe: fullRecipe });
     } catch (error) {
-      console.error('Error loading recipe details:', error);
-      // Fallback to basic recipe data if API fails
       this.setState({ selectedRecipe: recipe });
     }
   };
@@ -887,7 +858,7 @@ class RecipeList extends Component {
                 const rawMatch = Number(recipe.matchPercentage) || 0;
                 const matchPercentage = Math.round(rawMatch);
 
-                // Ensure missingIngredients is in the correct format (array of objects with name property)
+                // Make sure missingIngredients is array of objects with name property
                 const missingIngredients = (recipe.missingIngredients || []).map(item => {
                   if (typeof item === 'string') {
                     return { name: item };

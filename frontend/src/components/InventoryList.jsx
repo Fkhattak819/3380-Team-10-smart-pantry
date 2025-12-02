@@ -2,49 +2,51 @@ import React, { Component } from 'react';
 import { PantryService } from '../services/PantryService.js';
 import { getPantry, addToPantry, removeFromPantry, searchIngredients } from '../services/api.js';
 
-// Inventory list component
+// Component that displays and manages the user's pantry inventory
+// Uses PantryService to manage the list of items
 class InventoryList extends Component {
   constructor(props) {
     super(props);
+    // Create a PantryService instance to manage pantry items
     this.pantryService = new PantryService();
     
     this.state = {
-      items: [],
-      newItem: { name: '', quantity: 1, unit: '' },
-      searchQuery: '',
-      isLoading: true,
-      error: null,
-      ingredientSuggestions: [],
-      showSuggestions: false,
-      selectedIngredient: null
+      items: [], // List of pantry items to display
+      newItem: { name: '', quantity: 1, unit: '' }, // Form state for adding new items
+      searchQuery: '', // Search filter for items
+      isLoading: true, // Loading state
+      error: null, // Error message if something goes wrong
+      ingredientSuggestions: [], // Autocomplete suggestions from API
+      showSuggestions: false, // Whether to show the suggestions dropdown
+      selectedIngredient: null // Currently selected ingredient from suggestions
     };
   }
 
+  // Load pantry data when component first mounts
   componentDidMount() {
-    // Only load if userId is available, otherwise wait for componentDidUpdate
     if (this.props.userId) {
       this.loadPantryData();
     }
   }
 
+  // Reload pantry if userId becomes available after mount
   componentDidUpdate(prevProps) {
-    // If userId becomes available after mount, load the data
     if (!prevProps.userId && this.props.userId) {
       this.loadPantryData();
     }
   }
 
+  // Load pantry from API
+  // Retry if database error (user might still be initializing)
   async loadPantryData(retryCount = 0) {
     const MAX_RETRIES = 3;
-    const RETRY_DELAY = 1000; // 1 second delay between retries
+    const RETRY_DELAY = 1000;
     
     try {
       this.setState({ isLoading: true, error: null });
-      console.log('Loading pantry data for userId:', this.props.userId, `(attempt ${retryCount + 1})`);
 
       const userId = this.props.userId;
       if (!userId) {
-        console.error('No userId provided');
         this.setState({ isLoading: false, error: 'User not authenticated' });
         return;
       }
@@ -52,58 +54,45 @@ class InventoryList extends Component {
       let pantryData;
       try {
         pantryData = await getPantry(userId);
-        console.log('Received pantry data:', pantryData);
       } catch (apiError) {
-        // If API returns 404 or empty response for new user, treat as empty pantry
         if (apiError.message && (apiError.message.includes('404') || apiError.message.includes('not found'))) {
-          console.log('New user - no pantry data found, initializing empty pantry');
+          // New user, no pantry yet
           pantryData = [];
         } else if (retryCount < MAX_RETRIES && (apiError.message.includes('500') || apiError.message.includes('Database'))) {
-          // Retry for database errors (user might still be initializing)
-          console.log(`Retrying pantry load (${retryCount + 1}/${MAX_RETRIES})...`);
+          // Database error, retry
           setTimeout(() => {
             this.loadPantryData(retryCount + 1);
           }, RETRY_DELAY);
           return;
         } else {
-          throw apiError; // Re-throw if it's a different error or max retries reached
+          throw apiError;
         }
       }
       
       this.pantryService.clearAll();
       
-      // Transform API response to match PantryItem format
-      // Handle empty pantry (new user) - API may return empty array, null, or undefined
+      // Convert API data to pantry items
       if (Array.isArray(pantryData)) {
         pantryData.forEach(item => {
           try {
-            // Add item with unit
             this.pantryService.addItem(
               item.Name,
               item.Quantity || item.qty || 1,
               item.Unit || ''
             );
           } catch (itemError) {
-            console.error('Error processing item:', item, itemError);
+            // Skip bad items
           }
         });
       } else if (pantryData === null || pantryData === undefined) {
-        // New user with empty pantry - API returns null/undefined
-        console.log('Empty pantry for new user - initializing with empty array');
-        pantryData = []; // Normalize to empty array
+        pantryData = [];
       } else {
-        console.warn('Pantry data is not an array:', pantryData);
-        // Treat unexpected format as empty pantry
         pantryData = [];
       }
       
-      // Always update items list and set loading to false, even for empty pantry
       this.updateItemsList();
       this.setState({ isLoading: false, error: null });
-      console.log('Pantry data loaded successfully. Items count:', this.pantryService.items.length);
     } catch (error) {
-      console.error('Error loading pantry data:', error);
-      console.error('Error stack:', error.stack);
       this.setState({ 
         items: [], 
         isLoading: false, 
@@ -133,7 +122,6 @@ class InventoryList extends Component {
             showSuggestions: true
           });
         } catch (error) {
-          console.error('Error searching ingredients:', error);
           this.setState({ ingredientSuggestions: [], showSuggestions: false });
         }
       } else {
@@ -182,20 +170,10 @@ class InventoryList extends Component {
     }
     
     try {
-      // Use the exact ingredient name from database (case-sensitive)
       const ingredientName = this.state.selectedIngredient.Name;
       
-      console.log('Adding to pantry via API:', {
-        userId,
-        ingredientName,
-        quantity: parseFloat(quantity) || 1,
-        unit: unit || this.state.selectedIngredient.DefaultUnit
-      });
-      
-      // Call Flask API to add item with unit
       await addToPantry(userId, ingredientName, parseFloat(quantity) || 1, unit || this.state.selectedIngredient.DefaultUnit);
 
-      // Reload pantry data from API
       await this.loadPantryData();
       
       this.setState({
@@ -205,7 +183,6 @@ class InventoryList extends Component {
         ingredientSuggestions: []
       });
     } catch (error) {
-      console.error('Error adding item:', error);
       alert('Error adding item: ' + error.message);
     }
   };
@@ -219,13 +196,10 @@ class InventoryList extends Component {
     const ingredientName = item.name.toLowerCase().replace(/\s+/g, '_');
     
     try {
-      // Call Flask API to remove item
       await removeFromPantry(userId, ingredientName);
 
-      // Reload pantry data from API
       await this.loadPantryData();
     } catch (error) {
-      console.error('Error removing item:', error);
       alert('Error removing item: ' + error.message);
     }
   };
@@ -246,7 +220,6 @@ class InventoryList extends Component {
   }
 
   formatDisplayName(name) {
-    // Replace underscores with spaces for display
     return name.replace(/_/g, ' ');
   }  
 

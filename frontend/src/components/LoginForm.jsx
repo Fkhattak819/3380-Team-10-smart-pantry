@@ -2,8 +2,9 @@ import { useState } from "react"
 import { authService } from "../services/authService";
 import SmartPantryImage from "../assets/SmartPantry.png";
 
+// Login/Signup form - using hooks
 const LoginForm = ({ onLoginSuccess }) => {
-  const [mode, setMode] = useState("login") // 'login' or 'signup'
+  const [mode, setMode] = useState("login") // login or signup
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -18,7 +19,7 @@ const LoginForm = ({ onLoginSuccess }) => {
       let data;
       
       if (mode === "signup") {
-        // For signup, first register the user
+        // Create account first
         const signupData = await authService.signup(username, password)
         
         if (signupData.error) {
@@ -27,11 +28,10 @@ const LoginForm = ({ onLoginSuccess }) => {
           return
         }
         
-        // After successful signup, automatically log in to get userId
-        // Add a small delay to allow backend to fully initialize the user
+        // Wait a sec for database to finish
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Now log in to get the userId
+        // Auto login after signup
         data = await authService.login(username, password)
         
         if (data.error) {
@@ -40,30 +40,21 @@ const LoginForm = ({ onLoginSuccess }) => {
           return
         }
       } else {
-        // For login, use normal flow
-        console.log('🔑 Attempting manual login for:', username);
+        // Just login
         data = await authService.login(username, password)
-        console.log('🔑 Manual login result:', data);
       }
 
       if (data.error) {
-        console.error('❌ Login error:', data.error);
         setError(data.error || "An error occurred")
         setLoading(false)
         return
       }
 
-      // Debug: log the response to see what we're getting
-      console.log('✅ Login success - full response:', data);
-
-      // Success - call the callback with user data
-      // Handle different possible response formats from backend
-      // Backend returns: { message: "Login successful", userId: X, username: "..." }
+      // Get user data from response
       const userData = {
         userId: data.userId || data.user_id || data.id,
         username: data.username || data.userName || username,
       };
-      console.log('👤 Calling onLoginSuccess with:', userData);
       onLoginSuccess(userData)
     } catch (err) {
       setError("Connection failed. Make sure the backend is accessible.")
@@ -73,15 +64,12 @@ const LoginForm = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen flex relative">
-      {/* KitchenSync Logo - Top Left */}
       <div className="absolute top-6 left-6 z-20">
         <h1 className="text-2xl font-bold text-green-400">KitchenSync</h1>
       </div>
 
-      {/* Left Half - Login Form */}
       <div className="w-full lg:w-1/2 bg-white flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {/* Welcome Text */}
           <div className="mb-8">
             <h2 className="text-5xl font-bold text-slate-900">
               Welcome
@@ -157,9 +145,7 @@ const LoginForm = ({ onLoginSuccess }) => {
         </div>
       </div>
 
-      {/* Right Half - Green to White Gradient Background */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-l from-green-400 to-white relative overflow-hidden">
-        {/* Main Image - Peeking from bottom right corner like reference image */}
         <img 
           src={SmartPantryImage} 
           alt="SmartPantry" 

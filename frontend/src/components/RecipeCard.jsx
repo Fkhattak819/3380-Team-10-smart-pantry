@@ -3,7 +3,7 @@ import { addMissingToShoppingList } from '../services/api.js';
 import Notification from './Notification.jsx';
 import { HiClock, HiFire, HiUsers } from 'react-icons/hi';
 
-// Helper function to format time
+// Format time display
 function formatTime(timeMinutes) {
   if (!timeMinutes) return 'N/A';
   if (timeMinutes < 60) {
@@ -110,7 +110,6 @@ class RecipeCard extends Component {
       }
   
     } catch (error) {
-      console.error('Error adding missing ingredients:', error);
       this.setState({ 
         notification: { 
           message: 'Failed to add missing ingredients: ' + (error.message || 'Unknown error'), 

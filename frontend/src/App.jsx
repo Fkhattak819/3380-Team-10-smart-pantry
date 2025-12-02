@@ -8,20 +8,19 @@ import SettingsPanel from './components/SettingsPanel'
 import CartModal from './components/CartModal'
 import { authService } from './services/authService'
 
-// Main App component
+// Main App component - manages global state
+// Handles auth, tabs, cart, filters
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      user: authService.getUser(),
+      user: authService.getUser(), // Get user from localStorage if logged in
       isLoading: true,
-      activeTab: 'recipes',
+      activeTab: 'recipes', // recipes or pantry tab
       isOnline: navigator.onLine,
       isSettingsOpen: false,
-      // Cart State
-      cart: [], 
+      cart: [], // Shopping cart for missing ingredients
       isCartOpen: false,
-      // Recipe Filters State
       recipeFilters: {
         maxPrepTime: 60,
         selectedDiet: '',
@@ -32,6 +31,7 @@ class App extends Component {
     };
   }
 
+  // Check if user logged in when component mounts
   componentDidMount() {
     const user = authService.getUser();
     this.setState({ user, isLoading: false });
@@ -39,17 +39,17 @@ class App extends Component {
     window.addEventListener('offline', this.handleOnlineStatus);
   }
 
+  // Remove event listeners on unmount
   componentWillUnmount() {
     window.removeEventListener('online', this.handleOnlineStatus);
     window.removeEventListener('offline', this.handleOnlineStatus);
   }
 
-  // NEW: Lifecycle method to control body scrolling
+  // Stop body scroll when modals open
   componentDidUpdate(prevProps, prevState) {
     const wasOpen = prevState.isSettingsOpen || prevState.isCartOpen;
     const isOpen = this.state.isSettingsOpen || this.state.isCartOpen;
 
-    // Use requestAnimationFrame to prevent blocking UI when toggling panels
     if (wasOpen !== isOpen) {
       requestAnimationFrame(() => {
         document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -57,22 +57,25 @@ class App extends Component {
     }
   }
 
+  // Save user when login succeeds
   handleLoginSuccess = (user) => {
     authService.setUser(user);
     this.setState({ user });
   };
 
+  // Logout - clear user from localStorage and state
   handleLogout = () => {
     authService.logout();
     this.setState({ user: null, isSettingsOpen: false });
   };
 
+  // Update online status
   handleOnlineStatus = () => {
     this.setState({ isOnline: navigator.onLine });
   };
 
+  // Switch tabs and close modals
   handleTabChange = (tab) => {
-    // Use requestAnimationFrame to prevent blocking UI during tab switch
     requestAnimationFrame(() => {
       this.setState({ activeTab: tab, isSettingsOpen: false, isCartOpen: false });
     });
@@ -94,29 +97,26 @@ class App extends Component {
     this.setState({ isCartOpen: false });
   };
   
+  // Add ingredient to cart
+  // Return true if added, false if already there
   handleAddToCart = (ingredientName) => {
-    // Check if the ingredient already exists before adding it
     const wasAlreadyInCart = this.state.cart.includes(ingredientName);
     
     if (wasAlreadyInCart) {
-      return false; // Already in cart, return false
+      return false;
     }
     
-    // If unique, add it to the cart
     this.setState(prevState => ({
       cart: [...prevState.cart, ingredientName]
     }));
     
-    return true; // Successfully added, return true
+    return true;
   };
 
   handleRemoveCartItem = (ingredientName) => {
-    // Removes the first occurrence of the ingredient name from the cart
     this.setState(prevState => ({
       cart: prevState.cart.filter((item, index) => {
-        // Find the index of the first item matching ingredientName
         const itemIndexToRemove = prevState.cart.findIndex(i => i === ingredientName);
-        // Only return true (keep the item) if the current index is NOT the index to remove
         return index !== itemIndexToRemove;
       })
     }));
@@ -197,7 +197,6 @@ class App extends Component {
         </div>
       );
     } catch (error) {
-      console.error('Error in App render:', error);
       return (
         <div style={{ textAlign: 'center', padding: '50px' }}>
           <h2>Something went wrong</h2>

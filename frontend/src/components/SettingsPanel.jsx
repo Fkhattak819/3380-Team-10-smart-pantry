@@ -24,7 +24,7 @@ const allergenOptions = [
   { value: 'beef_free', label: 'Beef Free' }
 ];
 
-// Helper function to format display names (convert underscores to spaces and capitalize)
+// Format display names - convert underscores to spaces
 const formatDisplayName = (name) => {
   return name
     .split('_')
@@ -54,7 +54,6 @@ class SettingsPanel extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    // Load preferences when userId becomes available or changes
     if (this.props.userId && this.props.userId !== prevProps.userId) {
       this.loadUserPreferences();
     }
@@ -105,16 +104,13 @@ class SettingsPanel extends Component {
             selectedAllergens: parsed.selectedAllergens || defaultAllergens
           });
         } catch (e) {
-          console.error('Error parsing saved preferences:', e);
-          // If parsing fails, just use diet from database
           this.setState({ selectedDiet });
         }
       } else {
-        // No saved preferences, just use diet from database
         this.setState({ selectedDiet });
       }
     } catch (error) {
-      console.error('Error loading user preferences:', error);
+      // Ignore errors loading preferences
     } finally {
       this.setState({ isLoading: false });
     }
@@ -123,17 +119,14 @@ class SettingsPanel extends Component {
   async savePreferences() {
     const { userId } = this.props;
     if (!userId) {
-      console.error('No userId available to save preferences');
       return;
     }
 
     try {
-      // Save diet preference to database
       const { selectedDiet } = this.state;
       const diets = selectedDiet ? [selectedDiet] : [];
       await saveUserPreferences(userId, diets);
       
-      // Save other preferences (allergens, calories, prep time) to localStorage
       const localStorageKey = this.getLocalStorageKey(userId);
       const preferencesToSave = {
         selectedDiet: this.state.selectedDiet,
@@ -143,10 +136,7 @@ class SettingsPanel extends Component {
         selectedAllergens: this.state.selectedAllergens
       };
       localStorage.setItem(localStorageKey, JSON.stringify(preferencesToSave));
-      
-      console.log('Preferences saved successfully');
     } catch (error) {
-      console.error('Error saving preferences:', error);
       alert('Failed to save preferences. Please try again.');
     }
   }
@@ -156,21 +146,18 @@ class SettingsPanel extends Component {
     try {
       if (onLogout) onLogout();
     } catch (e) {
-      // swallow errors from parent
-      console.error('Logout handler error', e);
+      // Ignore errors
     }
     if (onClose) onClose();
   }
 
   handlePrepTimeChange = (e) => {
     const value = parseInt(e.target.value);
-    // Constrain input to be between 5 and 999 minutes
     let newTime = value;
     if (newTime < 5) newTime = 5;
     if (newTime > 999) newTime = 999;
     
     this.setState({ maxPrepTime: newTime }, () => {
-      // Auto-save when prep time changes
       this.savePreferences();
     });
   };
@@ -250,11 +237,9 @@ class SettingsPanel extends Component {
         localStorage.removeItem(localStorageKey);
       }
     } catch (error) {
-      console.error('Error clearing preferences:', error);
       // Still continue with reset even if save fails
     }
     
-    // Notify parent component with default filter values to trigger recipe reload
     if (onFilterChange) {
       onFilterChange({
         maxPrepTime: 60,
@@ -265,7 +250,6 @@ class SettingsPanel extends Component {
       });
     }
     
-    // Reload the page to reset everything
     window.location.reload();
   };
 
