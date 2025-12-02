@@ -36,7 +36,7 @@ class SettingsPanel extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      maxPrepTime: 60, 
+      maxPrepTime: 300, 
       isAllergensOpen: false,
       selectedAllergens: allergenOptions.reduce((acc, allergen) => {
         acc[allergen.value] = false;
