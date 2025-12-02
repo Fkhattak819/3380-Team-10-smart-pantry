@@ -104,6 +104,7 @@ def login_user():
 def register_user():
     data = request.json
     username = data.get('username')
+    # Email removed as requested
     password = data.get('password')
 
     if not all([username, password]):
@@ -120,6 +121,7 @@ def register_user():
 
         hashed_password = generate_password_hash(password)
         
+        # Insert without Email
         cursor.execute("INSERT INTO Users (Username, PasswordHash) VALUES (?, ?)", 
                        (username, hashed_password))
         conn.commit()
@@ -146,8 +148,9 @@ def user_preferences():
         elif request.method == 'POST':
             data = request.json
             user_id = data.get('userId')
-            diets = data.get('diets', [])
+            diets = data.get('diets', []) # List of strings
 
+            # Clear old prefs and add new ones
             cursor.execute("DELETE FROM UserPreferences WHERE UserID = ?", (user_id,))
             for diet in diets:
                 cursor.execute("INSERT INTO UserPreferences (UserID, DietType) VALUES (?, ?)", (user_id, diet))
@@ -239,6 +242,10 @@ def add_to_pantry():
 # --- CONSUME RECIPE (MAKE RECIPE) ---
 @app.route('/api/pantry/consume', methods=['POST'])
 def consume_recipe():
+    """
+    Deducts ingredients from pantry when a user makes a recipe.
+    EXCLUDES spices and staples.
+    """
     data = request.json
     user_id = data.get('userId')
     recipe_id = data.get('recipeId')
@@ -248,6 +255,7 @@ def consume_recipe():
     try:
         cursor = conn.cursor()
         
+        # 1. Get Recipe Ingredients
         cursor.execute("""
             SELECT IngredientID, Quantity, Unit 
             FROM RecipeIngredients 
@@ -264,6 +272,7 @@ def consume_recipe():
             qty_needed = ing.Quantity
             unit = ing.Unit.lower().strip()
             
+            # SKIP spices/staples logic
             if unit in ignore_units or qty_needed == 0:
                 continue
                 
@@ -298,7 +307,7 @@ def get_recipe_matches():
     limit = request.args.get('limit', default=10, type=int)
     offset = request.args.get('offset', default=0, type=int)
     
-    # New Filters (User overrides)
+    # Filters
     max_time = request.args.get('maxTime', type=int)
     min_cal = request.args.get('minCal', type=int)
     max_cal = request.args.get('maxCal', type=int)
@@ -312,15 +321,12 @@ def get_recipe_matches():
     try:
         cursor = conn.cursor()
         
-        # 1. Determine Diets (Param > Preference)
-        if diet_param:
-             user_diets = diet_param.split(',')
-        else:
-            cursor.execute("SELECT DietType FROM UserPreferences WHERE UserID = ?", (userId,))
-            user_diets = [row[0] for row in cursor.fetchall()]
+        # 1. Get User Preferences
+        cursor.execute("SELECT DietType FROM UserPreferences WHERE UserID = ?", (userId,))
+        user_diets = [row[0] for row in cursor.fetchall()]
+        if diet_param: user_diets = diet_param.split(',')
 
-        # 2. Build Query (With Filters integrated into SQL for speed)
-        # We removed "TOP 100" so we can scan everything, then filter, then paginate.
+        # 2. Base Query (Matches Only)
         query = """
             WITH UserPantry AS (
                 SELECT IngredientID FROM Pantry WHERE UserID = ?
@@ -363,10 +369,8 @@ def get_recipe_matches():
             LEFT JOIN RecipeTagList rtl ON r.RecipeID = rtl.RecipeID
             WHERE 1=1
         """
-        
         params = [userId]
 
-        # Add SQL filters for Time/Cal
         if max_time:
             query += " AND r.TimeMinutes <= ?"
             params.append(max_time)
@@ -382,7 +386,7 @@ def get_recipe_matches():
         cursor.execute(query, params)
         all_matches = sql_to_dict_list(cursor)
         
-        # 3. Filter by Diet (Python side)
+        # 3. Filter and Paginate
         valid_matches = []
         for recipe in all_matches:
             recipe['MissingIngredients'] = recipe['MissingIngredients'].split(', ') if recipe['MissingIngredients'] else []
@@ -391,8 +395,29 @@ def get_recipe_matches():
             if check_dietary_restrictions(recipe_tags, user_diets):
                 valid_matches.append(recipe)
 
-        # 4. Apply Pagination (Limit & Offset) AFTER filtering
         paginated_matches = valid_matches[offset : offset + limit]
+
+        # 4. ENRICHMENT LOOP (PRE-LOAD DETAILS)
+        # This is the optimization to prevent extra calls
+        for recipe in paginated_matches:
+            rid = recipe['RecipeID']
+            
+            # Fetch Ingredients
+            cursor.execute("""
+                SELECT i.Name, ri.Quantity, ri.Unit, ri.Preparation
+                FROM RecipeIngredients ri
+                JOIN Ingredients i ON ri.IngredientID = i.IngredientID
+                WHERE ri.RecipeID = ?
+            """, (rid,))
+            recipe['ingredients'] = sql_to_dict_list(cursor)
+            
+            # Fetch Instructions
+            cursor.execute("SELECT StepNumber, StepText FROM Instructions WHERE RecipeID = ? ORDER BY StepNumber", (rid,))
+            recipe['instructions'] = sql_to_dict_list(cursor)
+            
+            # Fetch Tags (Clean list)
+            cursor.execute("SELECT t.TagName FROM RecipeTags rt JOIN Tags t ON rt.TagID = t.TagID WHERE rt.RecipeID = ?", (rid,))
+            recipe['tags'] = [row[0] for row in cursor.fetchall()]
 
         return jsonify(paginated_matches)
 
@@ -449,7 +474,7 @@ def search_recipes():
             if check_dietary_restrictions(r_tags, user_diets):
                 final_results.append(r)
 
-        return jsonify(final_results[:50]) # Limit search results for performance
+        return jsonify(final_results[:50])
     except Exception as e:
         print(e)
         return jsonify([])
@@ -463,9 +488,11 @@ def get_recipe_details(recipe_id):
     
     try:
         cursor = conn.cursor()
+        
         cursor.execute("SELECT * FROM Recipes WHERE RecipeID = ?", (recipe_id,))
         row = cursor.fetchone()
         if not row: return jsonify({"error": "Recipe not found"}), 404
+            
         columns = [column[0] for column in cursor.description]
         recipe = dict(zip(columns, row))
 
@@ -484,6 +511,7 @@ def get_recipe_details(recipe_id):
         recipe['tags'] = [row[0] for row in cursor.fetchall()]
         
         return jsonify(recipe)
+
     finally:
         conn.close()
 
@@ -550,6 +578,9 @@ def manage_shopping_list():
 
 @app.route('/api/shopping-list/add-from-recipe', methods=['POST'])
 def add_missing_ingredients():
+    """
+    SMART FEATURE: Adds all missing ingredients from a recipe to shopping list.
+    """
     data = request.json
     user_id = data.get('userId')
     recipe_id = data.get('recipeId')
@@ -560,6 +591,7 @@ def add_missing_ingredients():
     try:
         cursor = conn.cursor()
         
+        # Calculate difference between Recipe Needs and Pantry Haves
         query = """
             SELECT 
                 ri.IngredientID, 
